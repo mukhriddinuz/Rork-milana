@@ -1,0 +1,24 @@
+{
+  "name": "Milana Premium",
+  "short_name": "Milana",
+  "description": "Milana Premium - Premium fashion catalog and shopping",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#CB11AB",
+  "background_color": "#FFFFFF",
+  "lang": "uz",
+  "icons": [
+    {
+      "src": "/assets/images/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/images/favicon.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    }
+  ]
+}

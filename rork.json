@@ -1,0 +1,30 @@
+{
+  "$schema": "https://rork.com/schema/rork.json",
+  "apps": [
+    {
+      "name": "Milana Premium",
+      "path": "expo",
+      "framework": "react-native"
+    },
+    {
+      "name": "Fashion Store",
+      "path": "expo",
+      "framework": "react-native"
+    },
+    {
+      "name": "Milana Premium",
+      "path": "expo",
+      "framework": "react-native"
+    },
+    {
+      "name": "Milana Premium",
+      "path": "expo",
+      "framework": "react-native"
+    },
+    {
+      "name": "Milana Premium",
+      "path": "expo",
+      "framework": "react-native"
+    }
+  ]
+}
