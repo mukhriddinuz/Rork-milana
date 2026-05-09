@@ -254,8 +254,10 @@ export default function CartScreen() {
   if (cartProducts.length === 0) {
     return (
       <View style={styles.container}>
-        {headerSection}
-        <MobileHeader />
+        <View style={styles.headerWrapper}>
+          {headerSection}
+          <MobileHeader />
+        </View>
         <ScrollView
           contentContainerStyle={[
             styles.scrollOuter,
@@ -289,8 +291,10 @@ export default function CartScreen() {
 
   return (
     <View style={styles.container}>
-      {headerSection}
-      <MobileHeader />
+      <View style={styles.headerWrapper}>
+        {headerSection}
+        <MobileHeader />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.scrollOuter,
@@ -411,6 +415,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  headerWrapper: {
+    zIndex: 9999,
+    elevation: 9999,
+    position: Platform.OS === 'web' ? ('relative' as const) : ('absolute' as const),
+    top: 0,
+    left: 0,
+    right: 0,
   },
   scrollOuter: {
     paddingBottom: 0,
