@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     width: 380,
     justifyContent: 'space-between',
-    paddingTop: 4,
+    paddingTop: 10,
     marginLeft: 24,
   },
   itemColPrice: {
@@ -625,13 +625,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   itemPriceText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500' as const,
     color: '#000000',
     fontFamily: LUXURY_FONT,
   },
   itemTotalText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500' as const,
     color: '#000000',
     fontFamily: LUXURY_FONT,
