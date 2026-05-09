@@ -75,25 +75,27 @@ function CartItemRow({
           />
         </Pressable>
         <View style={styles.itemInfo}>
-          <Pressable onPress={onOpenQuickView}>
-            {/* 1. NOMI (Name) - 18px Black Uppercase */}
-            <Text style={styles.itemBrand} numberOfLines={1}>
-              {productAny.name ? productAny.name.toUpperCase() : (categoryName ? categoryName.toUpperCase() : 'MAHSULOT')}
-            </Text>
-
-            {/* 2. MODELI (Model) - 15px Grey */}
-            <Text style={styles.itemDesc} numberOfLines={1}>
-              {language === 'ru' ? 'Модель' : 'Model'}: {product.modelNumber}
-            </Text>
-
-            {/* 3. VARIANTI (Variant) - 15px Grey */}
-            {product.variantNumber ? (
-              <Text style={styles.itemModel} numberOfLines={1}>
-                {language === 'ru' ? 'Вариант' : 'Variant'}: {product.variantNumber}
+          <Pressable onPress={onOpenQuickView} style={{ flex: 1, justifyContent: 'space-between' }}>
+            <View>
+              {/* 1. NOMI (Name) - 18px Black Uppercase */}
+              <Text style={styles.itemBrand} numberOfLines={1}>
+                {productAny.name ? productAny.name.toUpperCase() : (categoryName ? categoryName.toUpperCase() : 'MAHSULOT')}
               </Text>
-            ) : null}
 
-            {/* 4. RAZMER (Size) - 15px Black Medium with 20px Top Margin */}
+              {/* 2. MODELI (Model) - 15px Grey */}
+              <Text style={styles.itemDesc} numberOfLines={1}>
+                {language === 'ru' ? 'Модель' : 'Model'}: {product.modelNumber}
+              </Text>
+
+              {/* 3. VARIANTI (Variant) - 15px Grey */}
+              {product.variantNumber ? (
+                <Text style={styles.itemModel} numberOfLines={1}>
+                  {language === 'ru' ? 'Вариант' : 'Variant'}: {product.variantNumber}
+                </Text>
+              ) : null}
+            </View>
+
+            {/* 4. RAZMER (Size) - pushed to bottom by flex */}
             <Text style={styles.itemVariant} numberOfLines={1}>
               {t('size', 'Size')}: {itemAny.size || productAny.size || 'Standard'}
             </Text>
@@ -569,13 +571,14 @@ const styles = StyleSheet.create({
   },
   itemInfo: {
     flex: 1,
-    paddingTop: 4,
+    height: 113,
+    marginLeft: 0,
   },
   itemBrand: {
     fontSize: 18,
     fontWeight: '500' as const,
     color: '#000000',
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 0,
     fontFamily: LUXURY_FONT,
   },
@@ -599,7 +602,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500' as const,
     color: '#000000',
-    marginTop: 20,
     fontFamily: LUXURY_FONT,
   },
 
