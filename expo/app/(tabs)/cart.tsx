@@ -3,11 +3,11 @@ import React, { useMemo, useCallback, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
   Alert,
   StyleSheet,
   Platform,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -21,7 +21,7 @@ import { useOrders } from '@/contexts/OrdersContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useCategories } from '@/contexts/CategoriesContext';
 import { useWebHeader } from '@/contexts/WebHeaderContext';
-import WebHeader from '@/components/WebHeader';
+import WebHeader, { globalWebScrollY } from '@/components/WebHeader';
 import MobileHeader from '@/components/MobileHeader';
 import { MOBILE_HEADER_HEIGHT } from '@/components/MobileHeader';
 import QuickViewModal from '@/components/QuickViewModal';
@@ -164,6 +164,15 @@ export default function CartScreen() {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewVisible, setQuickViewVisible] = useState<boolean>(false);
 
+  const handleScroll = useMemo(
+    () =>
+      Animated.event(
+        [{ nativeEvent: { contentOffset: { y: globalWebScrollY } } }],
+        { useNativeDriver: false }
+      ),
+    []
+  );
+
   const cartProducts = useMemo(() => {
     return items
       .map((item) => {
@@ -258,12 +267,14 @@ export default function CartScreen() {
           {headerSection}
           <MobileHeader />
         </View>
-        <ScrollView
+        <Animated.ScrollView
           contentContainerStyle={[
             styles.scrollOuter,
             isWebMobile && { paddingTop: MOBILE_HEADER_HEIGHT },
           ]}
           showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           <View style={[styles.pageContainer, !isDesktop && styles.pageContainerMobile]}>
             <Text style={styles.pageTitle}>{t('myCart', 'Shopping Bag')}</Text>
@@ -281,7 +292,7 @@ export default function CartScreen() {
             </View>
           </View>
           <GlobalFooter />
-        </ScrollView>
+        </Animated.ScrollView>
         {renderQuickView()}
       </View>
     );
@@ -295,12 +306,14 @@ export default function CartScreen() {
         {headerSection}
         <MobileHeader />
       </View>
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={[
           styles.scrollOuter,
           isWebMobile && { paddingTop: MOBILE_HEADER_HEIGHT, paddingBottom: 70 },
         ]}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         <View style={[styles.pageContainer, !isDesktop && styles.pageContainerMobile]}>
           {/* Top header row */}
@@ -405,7 +418,7 @@ export default function CartScreen() {
           </View>
         </View>
         <GlobalFooter />
-      </ScrollView>
+      </Animated.ScrollView>
       {renderQuickView()}
     </View>
   );
