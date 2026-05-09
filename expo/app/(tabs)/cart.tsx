@@ -300,6 +300,11 @@ export default function CartScreen() {
 
   const checkoutLabel = (isVip ? t('sendForConfirmation') : t('checkoutButton', 'Proceed to checkout')).toUpperCase();
 
+  const colItems = language === 'uz' ? 'Mahsulotlar' : language === 'ru' ? 'Ваши товары' : 'Your items';
+  const colPriceLabel = language === 'uz' ? 'Narxi' : language === 'ru' ? 'Цена' : 'Price';
+  const colQtyLabel = language === 'uz' ? 'Soni' : language === 'ru' ? 'Количество' : 'Quantity';
+  const colTotalLabel = language === 'uz' ? 'Jami' : language === 'ru' ? 'Сумма' : 'Subtotal';
+
   return (
     <View style={styles.container}>
       <View style={styles.headerWrapper}>
@@ -336,20 +341,12 @@ export default function CartScreen() {
 
           {/* Table Header */}
           <View style={styles.tableHeader}>
-            <Text style={styles.tableHeaderLeft}>
-              {t('yourItems', 'Your items')}
-            </Text>
+            <Text style={styles.tableHeaderLeft}>{colItems}</Text>
             {isDesktop ? (
               <View style={styles.tableHeaderRight}>
-                <Text style={[styles.tableHeaderText, styles.colPrice]}>
-                  {t('tablePrice', 'Price')}
-                </Text>
-                <Text style={[styles.tableHeaderText, styles.colQty]}>
-                  {t('tableQty', 'Quantity')}
-                </Text>
-                <Text style={[styles.tableHeaderText, styles.colTotal]}>
-                  {t('tableTotal', 'Subtotal')}
-                </Text>
+                <Text style={[styles.tableHeaderText, styles.colPrice]}>{colPriceLabel}</Text>
+                <Text style={[styles.tableHeaderText, styles.colQty]}>{colQtyLabel}</Text>
+                <Text style={[styles.tableHeaderText, styles.colTotal]}>{colTotalLabel}</Text>
               </View>
             ) : null}
           </View>
@@ -513,8 +510,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500' as const,
     color: '#000000',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1.5,
     fontFamily: LUXURY_FONT,
   },
   tableHeaderRight: {
@@ -529,8 +524,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500' as const,
     color: '#000000',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1.2,
     fontFamily: LUXURY_FONT,
   },
   colPrice: {
