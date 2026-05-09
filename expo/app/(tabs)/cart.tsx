@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#000000',
   },
   tableHeaderLeft: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '500' as const,
     color: '#000000',
     fontFamily: LUXURY_FONT,
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     marginLeft: 24,
   },
   tableHeaderText: {
-    fontSize: 13,
+    fontSize: 18,
     fontWeight: '500' as const,
     color: '#000000',
     fontFamily: LUXURY_FONT,
