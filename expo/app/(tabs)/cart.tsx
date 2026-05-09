@@ -61,6 +61,8 @@ function CartItemRow({
   const unitPrice = product.price ?? 0;
   const categoryObj = categories.find((c) => c.id === product.category);
   const categoryName = categoryObj ? (language === 'uz' ? categoryObj.uz : categoryObj.ru) : '';
+  const productAny = product as unknown as { name?: string; size?: string };
+  const itemAny = item as unknown as { size?: string };
 
   return (
     <View style={styles.itemRow}>
@@ -74,19 +76,27 @@ function CartItemRow({
         </Pressable>
         <View style={styles.itemInfo}>
           <Pressable onPress={onOpenQuickView}>
-            {categoryName ? (
-              <Text style={styles.itemBrand} numberOfLines={1}>
-                {categoryName.toUpperCase()}
-              </Text>
-            ) : null}
-            <Text style={styles.itemModel} numberOfLines={2}>
-              {product.modelNumber}
+            {/* 1. NOMI (Name) - 18px Black Uppercase */}
+            <Text style={styles.itemBrand} numberOfLines={1}>
+              {productAny.name ? productAny.name.toUpperCase() : (categoryName ? categoryName.toUpperCase() : 'MAHSULOT')}
             </Text>
+
+            {/* 2. MODELI (Model) - 15px Grey */}
+            <Text style={styles.itemDesc} numberOfLines={1}>
+              {language === 'ru' ? 'Модель' : 'Model'}: {product.modelNumber}
+            </Text>
+
+            {/* 3. VARIANTI (Variant) - 15px Grey */}
             {product.variantNumber ? (
-              <Text style={styles.itemVariant} numberOfLines={1}>
-                {t('size', 'Size')}: {product.variantNumber}
+              <Text style={styles.itemModel} numberOfLines={1}>
+                {language === 'ru' ? 'Вариант' : 'Variant'}: {product.variantNumber}
               </Text>
             ) : null}
+
+            {/* 4. RAZMER (Size) - 15px Black Medium with 20px Top Margin */}
+            <Text style={styles.itemVariant} numberOfLines={1}>
+              {t('size', 'Size')}: {itemAny.size || productAny.size || 'Standard'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -565,9 +575,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500' as const,
     color: '#000000',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
     marginTop: 8,
+    marginBottom: 0,
+    fontFamily: LUXURY_FONT,
+  },
+  itemDesc: {
+    fontSize: 15,
+    fontWeight: '400' as const,
+    color: '#757575',
+    marginTop: 4,
     marginBottom: 0,
     fontFamily: LUXURY_FONT,
   },
@@ -575,7 +591,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '400' as const,
     color: '#757575',
-    lineHeight: 22,
     marginTop: 4,
     marginBottom: 0,
     fontFamily: LUXURY_FONT,
