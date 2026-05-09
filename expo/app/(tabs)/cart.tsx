@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback, useState } from 'react';
+
 import {
   View,
   Text,
@@ -7,7 +8,6 @@ import {
   Alert,
   StyleSheet,
   Platform,
-  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -163,7 +163,6 @@ export default function CartScreen() {
 
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewVisible, setQuickViewVisible] = useState<boolean>(false);
-  const [promoCode, setPromoCode] = useState<string>('');
 
   const cartProducts = useMemo(() => {
     return items
@@ -362,33 +361,6 @@ export default function CartScreen() {
 
           {/* Footer / Summary */}
           <View style={[styles.footerRow, !isDesktop && styles.footerRowMobile]}>
-            <View style={styles.promoCol}>
-              <Text style={styles.promoLabel}>
-                {t('giftCardPromo', 'Gift Card / Promo Code')}
-              </Text>
-              <View style={styles.promoInputRow}>
-                <TextInput
-                  value={promoCode}
-                  onChangeText={setPromoCode}
-                  placeholder={t('enterCode', 'Enter code')}
-                  placeholderTextColor="#999"
-                  style={styles.promoInput}
-                  testID="promo-code-input"
-                />
-                <Pressable
-                  onPress={() => {
-                    void Haptics.selectionAsync();
-                  }}
-                  style={({ pressed }) => [styles.useCodeBtn, pressed && { opacity: 0.85 }]}
-                  testID="apply-promo"
-                >
-                  <Text style={styles.useCodeBtnText}>
-                    {t('useCode', 'USE CODE')}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-
             <View style={styles.summaryCol}>
               <View style={styles.summaryLine}>
                 <Text style={styles.summaryLineLabel}>
@@ -678,7 +650,7 @@ const styles = StyleSheet.create({
 
   footerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     gap: 48,
     marginTop: 48,
   },
