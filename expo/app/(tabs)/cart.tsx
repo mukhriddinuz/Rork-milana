@@ -57,7 +57,6 @@ function CartItemRow({
   isDesktop: boolean;
   t: (key: string, fallback?: string) => string;
 }) {
-  const [isQtyHovered, setIsQtyHovered] = useState<boolean>(false);
   const subtotal = (product.price ?? 0) * item.quantity;
   const unitPrice = product.price ?? 0;
   const categoryObj = categories.find((c) => c.id === product.category);
@@ -110,47 +109,33 @@ function CartItemRow({
         </View>
 
         <View style={styles.itemColQty}>
-          <Pressable
-            onHoverIn={() => { if (Platform.OS === 'web') setIsQtyHovered(true); }}
-            onHoverOut={() => { if (Platform.OS === 'web') setIsQtyHovered(false); }}
-            onPress={() => setIsQtyHovered((v) => !v)}
-            style={styles.qtyWrapper}
-            testID={`cart-qty-${item.productId}`}
-          >
-            <View style={styles.qtyBaseBox}>
-              <Text style={styles.qtyText}>{item.quantity}</Text>
+          <View style={styles.qtyBoxSeamless}>
+            <Pressable
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onRemove();
+              }}
+              style={styles.qtyBtnSeamless}
+              testID={`cart-minus-${item.productId}`}
+            >
+              <Text style={styles.qtyBtnTextSeamless}>−</Text>
+            </Pressable>
+
+            <View style={styles.qtyNumberWrap}>
+              <Text style={styles.qtyNumberSeamless}>{item.quantity}</Text>
             </View>
 
-            {isQtyHovered ? (
-              <View style={styles.qtyExpanded}>
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onAdd();
-                  }}
-                  style={styles.qtyActionBtn}
-                  testID={`cart-plus-${item.productId}`}
-                >
-                  <Text style={styles.qtyActionText}>+</Text>
-                </Pressable>
-
-                <Text style={styles.qtyText}>{item.quantity}</Text>
-
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onRemove();
-                  }}
-                  style={styles.qtyActionBtn}
-                  testID={`cart-minus-${item.productId}`}
-                >
-                  <Text style={styles.qtyActionText}>−</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </Pressable>
+            <Pressable
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onAdd();
+              }}
+              style={styles.qtyBtnSeamless}
+              testID={`cart-plus-${item.productId}`}
+            >
+              <Text style={styles.qtyBtnTextSeamless}>+</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.itemColTotal}>
@@ -653,55 +638,36 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: LUXURY_FONT,
   },
-  qtyWrapper: {
-    position: 'relative',
-    width: 44,
-    height: 44,
-    zIndex: 50,
+  qtyBoxSeamless: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    height: 38,
+    width: 100,
   },
-  qtyBaseBox: {
+  qtyBtnSeamless: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  qtyText: {
-    fontSize: 15,
-    fontWeight: '400' as const,
-    color: '#000000',
-    fontFamily: LUXURY_FONT,
-  },
-  qtyExpanded: {
-    position: 'absolute',
-    top: -30,
-    bottom: -30,
-    left: -10,
-    right: -10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#EEEEEE',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 10,
-    zIndex: 100,
-  },
-  qtyActionBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  qtyActionText: {
+  qtyBtnTextSeamless: {
     fontSize: 18,
     fontWeight: '400' as const,
     color: '#757575',
+    fontFamily: LUXURY_FONT,
+  },
+  qtyNumberWrap: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qtyNumberSeamless: {
+    fontSize: 15,
+    fontWeight: '400' as const,
+    color: '#000000',
     fontFamily: LUXURY_FONT,
   },
   removeBtn: {
