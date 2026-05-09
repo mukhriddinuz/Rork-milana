@@ -502,9 +502,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingBottom: 10,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#000000',
+    borderBottomColor: '#EEEEEE',
   },
   tableHeaderLeft: {
     fontSize: 18,
