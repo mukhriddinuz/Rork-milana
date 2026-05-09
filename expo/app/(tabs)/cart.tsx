@@ -145,7 +145,7 @@ function CartItemRow({
             style={styles.removeBtn}
             testID={`cart-delete-${item.productId}`}
           >
-            <X size={11} color="#000000" strokeWidth={1.6} />
+            <X size={22} color="#757575" strokeWidth={1} />
             <Text style={styles.removeBtnText}>
               {t('removeItem', 'Remove')}
             </Text>
@@ -625,6 +625,8 @@ const styles = StyleSheet.create({
   itemColTotal: {
     width: 100,
     alignItems: 'flex-end',
+    height: 103,
+    justifyContent: 'space-between' as const,
   },
   itemPriceText: {
     fontSize: 15,
@@ -673,16 +675,12 @@ const styles = StyleSheet.create({
   removeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 24,
-    paddingVertical: 4,
+    gap: 6,
   },
   removeBtnText: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    color: '#000000',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
+    fontSize: 15,
+    fontWeight: '400' as const,
+    color: '#757575',
     fontFamily: LUXURY_FONT,
   },
 
