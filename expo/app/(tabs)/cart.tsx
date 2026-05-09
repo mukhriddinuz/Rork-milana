@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     maxWidth: 910,
     alignSelf: 'center',
     paddingHorizontal: 24,
-    paddingTop: 120,
+    paddingTop: 180,
     paddingBottom: 60,
   },
   pageContainerMobile: {
