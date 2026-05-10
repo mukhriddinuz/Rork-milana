@@ -201,7 +201,7 @@ export default function FavoritesScreen() {
         contentContainerStyle={[styles.scrollContentOuter, isWebMobile && { paddingTop: MOBILE_HEADER_HEIGHT, paddingBottom: 70 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.scrollContentInner, isDesktop && styles.scrollContentInnerDesktop]}>
+        <View style={[styles.scrollContentInner, isDesktop && styles.scrollContentInnerDesktop, { paddingBottom: 0 }]}>
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>
             {language === 'ru' ? 'Мой список желаний' : language === 'uz' ? "Mening xohishlarim ro'yxati" : 'My Wishlist'}
@@ -226,6 +226,7 @@ export default function FavoritesScreen() {
               </Pressable>
             </View>
           )}
+        </View>
         </View>
         {hasFavorites && (
           <View style={styles.filterBarWrapper}>
@@ -256,6 +257,7 @@ export default function FavoritesScreen() {
             </View>
           </View>
         )}
+        <View style={[styles.scrollContentInner, isDesktop && styles.scrollContentInnerDesktop]}>
         {!hasFavorites ? (
           <>
             <View style={styles.emptyContainer}>
