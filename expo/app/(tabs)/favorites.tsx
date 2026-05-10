@@ -231,9 +231,6 @@ export default function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
-      {activeDropdown !== null && (
-        <Pressable style={styles.dropdownOverlay} onPress={() => setActiveDropdown(null)} testID="fav-dropdown-overlay-global" />
-      )}
       <WebHeader
         search={search}
         onSearchChange={setSearch}
@@ -1119,7 +1116,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
-    zIndex: 10,
+    zIndex: 90,
     ...(Platform.OS === 'web' ? ({ cursor: 'default' } as any) : {}),
   },
   favGrid: {
