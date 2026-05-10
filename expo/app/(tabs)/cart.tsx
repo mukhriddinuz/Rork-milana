@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { ShoppingBag, X } from 'lucide-react-native';
+import { ShoppingBag, X, Package, Truck, Shirt } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/contexts/ClientsContext';
@@ -425,6 +425,35 @@ export default function CartScreen() {
             </Pressable>
           </View>
         </View>
+
+        <View style={styles.trustSection}>
+          <View style={styles.trustVerticalLine} />
+          <Text style={styles.trustBrandTitle}>MILANA PREMIUM</Text>
+          <Text style={styles.trustPhilosophyText}>
+            Biz faqat eng sifatli tabiiy materiallardan — paxta, viskoza, ipak va bambuk tolasidan — tikish uchun foydalanamiz. Har bir kiyim nafisligi, qulayligi va uzoq muddat xizmat qilishi bilan ajralib turadi. Milana Premium — bu sizning kundalik hayotingizga hashamat olib keluvchi brend.
+          </Text>
+          <Text style={styles.trustPhilosophyText}>
+            Мы используем только лучшие натуральные материалы — хлопок, вискозу, шёлк и бамбуковое волокно. Каждое изделие отличается утончённостью, комфортом и долговечностью. Milana Premium — бренд, привносящий роскошь в вашу повседневную жизнь.
+          </Text>
+
+          <View style={[styles.trustFeaturesRow, !isDesktop && styles.trustFeaturesRowMobile]}>
+            <View style={styles.trustFeatureItem}>
+              <Shirt size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>EKSKLYUZIV DIZAYN</Text>
+              <Text style={styles.trustFeatureDesc}>Xaridor istagiga ko&apos;ra individual modellar yaratish va premium darajada tikish xizmati.</Text>
+            </View>
+            <View style={styles.trustFeatureItem}>
+              <Package size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>ULGURJI HAMKORLIK</Text>
+              <Text style={styles.trustFeatureDesc}>Biznesingiz uchun yuqori sifatli kiyimlarni eng qulay shartlarda yetkazib berish.</Text>
+            </View>
+            <View style={styles.trustFeatureItem}>
+              <Truck size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>MDH BO&apos;YLAB LOGISTIKA</Text>
+              <Text style={styles.trustFeatureDesc}>Har qanday davlatga ishonchli, tezkor va xavfsiz yetkazib berish kafolati.</Text>
+            </View>
+          </View>
+        </View>
         <GlobalFooter />
       </Animated.ScrollView>
       {renderQuickView()}
@@ -833,6 +862,70 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     marginTop: 12,
     maxWidth: 360,
+    lineHeight: 20,
+    fontFamily: LUXURY_FONT,
+  },
+
+  trustSection: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 80,
+    paddingBottom: 80,
+    maxWidth: 1000,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  trustVerticalLine: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#D4D4D4',
+    marginBottom: 24,
+  },
+  trustBrandTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    letterSpacing: 4,
+    color: '#000000',
+    marginBottom: 24,
+    fontFamily: LUXURY_FONT,
+  },
+  trustPhilosophyText: {
+    fontSize: 13,
+    color: '#757575',
+    textAlign: 'center' as const,
+    lineHeight: 24,
+    marginBottom: 24,
+    maxWidth: 800,
+    fontFamily: LUXURY_FONT,
+  },
+  trustFeaturesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 60,
+    gap: 40,
+  },
+  trustFeaturesRowMobile: {
+    flexDirection: 'column',
+    gap: 48,
+  },
+  trustFeatureItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trustFeatureTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#000000',
+    letterSpacing: 1.5,
+    marginBottom: 12,
+    textAlign: 'center' as const,
+    fontFamily: LUXURY_FONT,
+  },
+  trustFeatureDesc: {
+    fontSize: 13,
+    color: '#757575',
+    textAlign: 'center' as const,
     lineHeight: 20,
     fontFamily: LUXURY_FONT,
   },
