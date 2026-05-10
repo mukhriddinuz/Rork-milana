@@ -308,12 +308,13 @@ export default function FavoritesScreen() {
                               else if (opt === 'women') displayOpt = language === 'ru' ? 'Женщины' : language === 'uz' ? 'Ayollar' : 'Women';
                               else if (opt === 'kids') displayOpt = language === 'ru' ? 'Дети' : language === 'uz' ? 'Bolalar' : 'Kids';
                             }
+                            const finalLabel = displayOpt.charAt(0).toUpperCase() + displayOpt.slice(1).toLowerCase();
                             return (
                               <Pressable key={i} style={styles.dropdownOption} onPress={() => toggleFilterOption(f.id, opt)} testID={`fav-${f.id}-opt-${i}`}>
                                 <View style={StyleSheet.flatten([styles.dropdownCheckbox, isSelected && styles.dropdownCheckboxActive])}>
                                   {isSelected && <View style={styles.dropdownCheckboxInner} />}
                                 </View>
-                                <Text style={styles.dropdownOptionText}>{displayOpt}</Text>
+                                <Text style={styles.dropdownOptionText}>{finalLabel}</Text>
                               </Pressable>
                             );
                           })}
