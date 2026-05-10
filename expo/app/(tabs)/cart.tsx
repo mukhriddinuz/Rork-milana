@@ -304,7 +304,6 @@ export default function CartScreen() {
                 <Text style={styles.primaryBtnText}>{t('goToCatalog')}</Text>
               </Pressable>
             </View>
-          </View>
 
           {/* Luxury Editorial Cross-Sell (Cart Only) */}
           <View style={styles.editorialSection}>
@@ -337,6 +336,7 @@ export default function CartScreen() {
                 </View>
               </Pressable>
             </View>
+          </View>
           </View>
 
           <View style={styles.trustSection}>
@@ -487,7 +487,6 @@ export default function CartScreen() {
               <Text style={styles.primaryBtnText}>{checkoutLabel}</Text>
             </Pressable>
           </View>
-        </View>
 
         {/* Luxury Editorial Cross-Sell (Cart Only) */}
         <View style={styles.editorialSection}>
@@ -520,6 +519,7 @@ export default function CartScreen() {
               </View>
             </Pressable>
           </View>
+        </View>
         </View>
 
         <View style={styles.trustSection}>
@@ -1029,11 +1029,11 @@ const styles = StyleSheet.create({
 
   editorialSection: {
     width: '100%',
-    maxWidth: 1400,
+    maxWidth: '100%',
     alignSelf: 'center',
-    paddingHorizontal: 24,
-    marginTop: 40,
-    marginBottom: 60,
+    paddingHorizontal: 0,
+    marginTop: 32,
+    marginBottom: 48,
   },
   editorialRow: {
     flexDirection: 'row',
