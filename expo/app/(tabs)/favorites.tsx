@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart, ChevronDown, Check, Package, Truck, Shirt } from 'lucide-react-native';
+import { Heart, ChevronDown, Package, Truck, Shirt } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductsContext';
@@ -108,7 +108,7 @@ export default function FavoritesScreen() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
-  const [sortDropdownOpen, setSortDropdownOpen] = useState<boolean>(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewVisible, setQuickViewVisible] = useState(false);
 
@@ -229,30 +229,53 @@ export default function FavoritesScreen() {
         </View>
         </View>
         {hasFavorites && (
-          <View style={styles.filterBarWrapper}>
-            <View style={styles.filterBarContent}>
-              <View style={styles.filterGroupLeft}>
-                <Pressable style={styles.filterChip}>
+          <View style={styles.toolbar}>
+            {activeDropdown !== null && (
+              <Pressable style={styles.dropdownOverlay} onPress={() => setActiveDropdown(null)} />
+            )}
+            <View style={styles.toolbarScroll}>
+              <View style={styles.toolbarLeft}>
+                <Pressable style={styles.filterTrigger} onPress={() => setActiveDropdown(activeDropdown === 'dept' ? null : 'dept')}>
                   <Text style={styles.filterText}>{language === 'ru' ? 'Отдел' : language === 'uz' ? 'Departament' : 'Department'}</Text>
-                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                  <ChevronDown size={14} color="#757575" strokeWidth={1.5} />
                 </Pressable>
-                <Pressable style={styles.filterChip}>
+                <Pressable style={styles.filterTrigger} onPress={() => setActiveDropdown(activeDropdown === 'cat' ? null : 'cat')}>
                   <Text style={styles.filterText}>{language === 'ru' ? 'Категории' : language === 'uz' ? 'Kategoriyalar' : 'Categories'}</Text>
-                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                  <ChevronDown size={14} color="#757575" strokeWidth={1.5} />
                 </Pressable>
-                <Pressable style={styles.filterChip} onPress={() => setInStockOnly(!inStockOnly)}>
+                <Pressable style={styles.filterTrigger} onPress={() => setActiveDropdown(activeDropdown === 'avail' ? null : 'avail')}>
                   <Text style={styles.filterText}>{language === 'ru' ? 'Наличие' : language === 'uz' ? 'Mavjudlik' : 'Availability'}</Text>
-                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                  <ChevronDown size={14} color="#757575" strokeWidth={1.5} />
                 </Pressable>
               </View>
-              <View style={styles.filterGroupRight}>
-                <Text style={styles.filterText}>
+              <View style={styles.toolbarRightGroup}>
+                <Text style={styles.itemCountText}>
                   {filteredFavorites.length} {language === 'ru' ? 'товаров' : language === 'uz' ? 'ta mahsulot' : 'items'}
                 </Text>
-                <Pressable style={styles.filterChip} onPress={() => setSortDropdownOpen(!sortDropdownOpen)}>
-                  <Text style={styles.filterText}>{t(SORT_KEYS[sortBy])}</Text>
-                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
-                </Pressable>
+                <View style={{ position: 'relative' }}>
+                  <Pressable
+                    style={[styles.sortTrigger, activeDropdown === 'sort' && styles.sortTriggerActive]}
+                    onPress={() => setActiveDropdown(activeDropdown === 'sort' ? null : 'sort')}
+                  >
+                    <Text style={[styles.sortText, activeDropdown === 'sort' && styles.sortTextActive]}>{t(SORT_KEYS[sortBy])}</Text>
+                    <ChevronDown size={14} color={activeDropdown === 'sort' ? '#000000' : '#757575'} strokeWidth={1.5} />
+                  </Pressable>
+                  {activeDropdown === 'sort' && (
+                    <View style={styles.sortDropdownMenuLuxury}>
+                      {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
+                        <Pressable
+                          key={key}
+                          style={styles.sortOptionLuxury}
+                          onPress={() => { setSortBy(key); setActiveDropdown(null); }}
+                        >
+                          <Text style={[styles.sortOptionTextLuxury, sortBy === key && styles.sortOptionTextLuxuryActive]}>
+                            {t(SORT_KEYS[key])}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
           </View>
@@ -291,33 +314,6 @@ export default function FavoritesScreen() {
           </>
         ) : (
           <>
-            {sortDropdownOpen && (
-              <View style={styles.sortDropdownMenuFloat}>
-                {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
-                  <Pressable
-                    key={key}
-                    style={[styles.sortDropdownItem, sortBy === key && styles.sortDropdownItemActive]}
-                    onPress={() => {
-                      setSortBy(key);
-                      setSortDropdownOpen(false);
-                    }}
-                  >
-                    <Text style={[styles.sortDropdownItemText, sortBy === key && styles.sortDropdownItemTextActive]}>
-                      {t(SORT_KEYS[key])}
-                    </Text>
-                    {sortBy === key && <Check size={14} color="#000000" strokeWidth={2.5} />}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            {sortDropdownOpen && (
-              <Pressable
-                style={styles.dropdownOverlay}
-                onPress={() => setSortDropdownOpen(false)}
-              />
-            )}
-
             <View style={styles.favGrid}>
               {paddedFavorites.map((item, idx) => (
                 <View
@@ -719,13 +715,96 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    width: '100%',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#EEEEEE',
     backgroundColor: '#FFFFFF',
     zIndex: 100,
+    marginBottom: 40,
+  },
+  toolbarScroll: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 1380,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    position: 'relative',
+    zIndex: 100,
+  },
+  toolbarRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  filterTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 16,
+  },
+  itemCountText: {
+    fontSize: 13,
+    color: '#757575',
+    fontFamily: LUXURY_FONT,
+  },
+  sortTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'transparent',
+  },
+  sortTriggerActive: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#EEEEEE',
+    borderBottomWidth: 0,
+    marginTop: -1,
+  },
+  sortText: {
+    fontSize: 13,
+    color: '#757575',
+    fontFamily: LUXURY_FONT,
+  },
+  sortTextActive: {
+    color: '#000000',
+    fontWeight: '500' as const,
+  },
+  sortDropdownMenuLuxury: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    width: 240,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 10,
+    zIndex: 500,
+  },
+  sortOptionLuxury: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  sortOptionTextLuxury: {
+    fontSize: 13,
+    color: '#757575',
+    fontFamily: LUXURY_FONT,
+    textAlign: 'right' as const,
+  },
+  sortOptionTextLuxuryActive: {
+    color: '#000000',
+    fontWeight: '500' as const,
   },
   toolbarMobile: {
     flexDirection: 'column',
@@ -735,7 +814,7 @@ const styles = StyleSheet.create({
   toolbarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 32,
     flexShrink: 0,
   },
   sortDropdownWrap: {
