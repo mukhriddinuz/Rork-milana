@@ -319,6 +319,10 @@ export default function CartScreen() {
   const colQtyLabel = language === 'uz' ? 'Soni' : language === 'ru' ? 'Количество' : 'Quantity';
   const colTotalLabel = language === 'uz' ? 'Jami' : language === 'ru' ? 'Сумма' : 'Subtotal';
 
+  const summaryTotalLabel = language === 'uz' ? 'Jami :' : language === 'ru' ? 'Итого :' : 'Subtotal :';
+  const summaryShippingLabel = language === 'uz' ? 'Yetkazib berish bepul :' : language === 'ru' ? 'Бесплатная доставка :' : 'Free shipping :';
+  const summaryGrandLabel = language === 'uz' ? 'Umumiy jami :' : language === 'ru' ? 'Общая сумма :' : 'Grand Total :';
+
   return (
     <View style={styles.container}>
       <View style={styles.headerWrapper}>
@@ -391,24 +395,16 @@ export default function CartScreen() {
           <View style={[styles.footerRow, !isDesktop && styles.footerRowMobile]}>
             <View style={styles.summaryCol}>
               <View style={styles.summaryLine}>
-                <Text style={styles.summaryLineLabel}>
-                  {t('summaryTotal', 'Subtotal')}
-                </Text>
+                <Text style={styles.summaryLineLabel}>{summaryTotalLabel}</Text>
                 <Text style={styles.summaryLineValue}>${total.toFixed(2)}</Text>
               </View>
               <View style={styles.summaryLine}>
-                <Text style={styles.summaryLineLabel}>
-                  {t('shipping', 'Shipping')}
-                </Text>
-                <Text style={styles.summaryLineValue}>
-                  {t('freeShipping', 'Free')}
-                </Text>
+                <Text style={styles.summaryLineLabel}>{summaryShippingLabel}</Text>
+                <Text style={styles.summaryLineValue}>$0.00</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryLine}>
-                <Text style={styles.grandTotalLabel}>
-                  {t('grandTotal', 'Grand Total')}
-                </Text>
+                <Text style={styles.grandTotalLabel}>{summaryGrandLabel}</Text>
                 <Text style={styles.grandTotalValue}>${total.toFixed(2)}</Text>
               </View>
               {isVip ? (
@@ -747,33 +743,31 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   summaryLineLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '400' as const,
-    color: '#666666',
+    color: '#757575',
     fontFamily: LUXURY_FONT,
   },
   summaryLineValue: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500' as const,
     color: '#000000',
     fontFamily: LUXURY_FONT,
   },
   summaryDivider: {
     height: 1,
-    backgroundColor: '#000000',
-    marginVertical: 12,
+    backgroundColor: '#EEEEEE',
+    marginVertical: 16,
   },
   grandTotalLabel: {
-    fontSize: 15,
-    fontWeight: '700' as const,
+    fontSize: 16,
+    fontWeight: '500' as const,
     color: '#000000',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1.2,
     fontFamily: LUXURY_FONT,
   },
   grandTotalValue: {
     fontSize: 18,
-    fontWeight: '700' as const,
+    fontWeight: '500' as const,
     color: '#000000',
     fontFamily: LUXURY_FONT,
   },
