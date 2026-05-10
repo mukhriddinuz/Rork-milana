@@ -252,6 +252,28 @@ export default function FavoritesScreen() {
                         </View>
                         <Text style={StyleSheet.flatten([styles.filterDropdownText, isOpen && styles.filterDropdownTextOpen])}>{f.label}</Text>
                       </Pressable>
+
+                      {isOpen && (
+                        <View style={styles.dropdownPanel}>
+                          <Pressable style={styles.dropdownOption} testID={`fav-${f.id}-opt-1`}>
+                            <View style={styles.dropdownCheckbox} />
+                            <Text style={styles.dropdownOptionText}>{language === 'ru' ? 'Вариант 1' : language === 'uz' ? 'Variant 1' : 'Option 1'}</Text>
+                          </Pressable>
+                          <Pressable style={styles.dropdownOption} testID={`fav-${f.id}-opt-2`}>
+                            <View style={styles.dropdownCheckbox} />
+                            <Text style={styles.dropdownOptionText}>{language === 'ru' ? 'Вариант 2' : language === 'uz' ? 'Variant 2' : 'Option 2'}</Text>
+                          </Pressable>
+
+                          <View style={styles.dropdownActions}>
+                            <Pressable style={styles.applyBtn} onPress={() => setActiveDropdown(null)}>
+                              <Text style={styles.applyBtnText}>{(language === 'ru' ? 'ПРИМЕНИТЬ' : language === 'uz' ? "QO'LLASH" : 'APPLY')}</Text>
+                            </Pressable>
+                            <Pressable style={StyleSheet.flatten([styles.applyBtn, { backgroundColor: '#F5F5F5', marginTop: 8 }])} onPress={() => setActiveDropdown(null)}>
+                              <Text style={StyleSheet.flatten([styles.applyBtnText, { color: '#000000' }])}>{language === 'ru' ? 'СБРОСИТЬ' : language === 'uz' ? 'TOZALASH' : 'CLEAR'}</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      )}
                     </View>
                   );
                 })}
@@ -833,6 +855,64 @@ const styles = StyleSheet.create({
   sortOptionTextActive: {
     color: '#000000',
     fontWeight: '500' as const,
+  },
+  dropdownPanel: {
+    position: 'absolute',
+    top: 51,
+    left: 0,
+    width: 260,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#E5E5E5',
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 99,
+    zIndex: 9999,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  dropdownCheckbox: {
+    width: 14,
+    height: 14,
+    borderWidth: 1,
+    borderColor: '#999999',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownOptionText: {
+    fontSize: 13,
+    color: '#555555',
+    fontFamily: LUXURY_FONT,
+  },
+  dropdownActions: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+    paddingTop: 20,
+  },
+  applyBtn: {
+    backgroundColor: '#999999',
+    width: '100%',
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600' as const,
+    letterSpacing: 2,
+    fontFamily: LUXURY_FONT,
   },
   toolbarMobile: {
     flexDirection: 'column',
