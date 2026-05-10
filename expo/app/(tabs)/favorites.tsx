@@ -245,6 +245,7 @@ export default function FavoritesScreen() {
       <ScrollView
         contentContainerStyle={[styles.scrollContentOuter, isWebMobile && { paddingTop: MOBILE_HEADER_HEIGHT, paddingBottom: 70 }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.scrollContentInner, isDesktop && styles.scrollContentInnerDesktop, { paddingBottom: 0 }]}>
         <View style={styles.pageHeader}>
@@ -347,24 +348,24 @@ export default function FavoritesScreen() {
                 </Text>
                 <View style={{ position: 'relative', zIndex: activeDropdown === 'sort' ? 100 : 1 }}>
                   <Pressable
-                    onPress={() => setActiveDropdown(activeDropdown === 'sort' ? null : 'sort')}
-                    style={StyleSheet.flatten([styles.sortDropdown, activeDropdown === 'sort' && styles.filterDropdownOpen])}
+                    style={StyleSheet.flatten([styles.sortTrigger, activeDropdown === 'sort' && styles.sortTriggerActive])}
+                    onPress={(e: any) => { e?.stopPropagation?.(); setActiveDropdown(activeDropdown === 'sort' ? null : 'sort'); }}
+                    testID="fav-sort-trigger"
                   >
+                    <Text style={StyleSheet.flatten([styles.sortText, activeDropdown === 'sort' && styles.sortTextActive])}>{t(SORT_KEYS[sortBy])}</Text>
                     <View style={{ transform: [{ rotate: activeDropdown === 'sort' ? '180deg' : '0deg' }] }}>
                       <ChevronDown size={14} color={activeDropdown === 'sort' ? '#000000' : '#757575'} strokeWidth={1.5} />
                     </View>
-                    <Text style={StyleSheet.flatten([styles.sortDropdownText, activeDropdown === 'sort' && styles.filterDropdownTextOpen])}>
-                      {t(SORT_KEYS[sortBy])}
-                    </Text>
                   </Pressable>
 
                   {activeDropdown === 'sort' && (
-                    <View style={styles.sortDropdownPanel}>
+                    <View style={styles.sortDropdownMenu}>
                       {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
                         <Pressable
                           key={key}
                           style={styles.sortOption}
-                          onPress={() => { setSortBy(key); setActiveDropdown(null); }}
+                          onPress={(e: any) => { e?.stopPropagation?.(); setSortBy(key); setActiveDropdown(null); }}
+                          testID={`fav-sort-opt-${key}`}
                         >
                           <Text style={StyleSheet.flatten([styles.sortOptionText, sortBy === key && styles.sortOptionTextActive])}>
                             {t(SORT_KEYS[key])}
@@ -859,6 +860,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 50,
   },
+  sortTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'transparent',
+  },
+  sortTriggerActive: {
+    backgroundColor: '#F5F5F5',
+    borderColor: '#EEEEEE',
+    borderBottomWidth: 0,
+    marginTop: -1,
+  },
+  sortText: {
+    fontSize: 13,
+    color: '#757575',
+    fontFamily: LUXURY_FONT,
+  },
+  sortTextActive: {
+    color: '#000000',
+    fontWeight: '500' as const,
+  },
   filterDropdownOpen: {
     backgroundColor: '#F5F5F5',
     height: 51,
@@ -1004,28 +1031,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  sortDropdownText: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    color: '#333',
-    maxWidth: 200,
-  },
-  sortDropdownMenu: {
+  sortDropdownMenu_legacy_unused: {
     position: 'absolute',
-    top: 44,
-    left: 0,
+    top: '100%',
+    right: 0,
+    width: 220,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingVertical: 4,
-    minWidth: 240,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#EEEEEE',
+    paddingVertical: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 300,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E8E8E8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 10,
+    zIndex: 500,
   },
   sortDropdownItem: {
     flexDirection: 'row',
