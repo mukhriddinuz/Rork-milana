@@ -231,44 +231,57 @@ export default function FavoritesScreen() {
         {hasFavorites && (
           <View style={styles.toolbar}>
             {activeDropdown !== null && (
-              <Pressable style={styles.dropdownOverlay} onPress={() => setActiveDropdown(null)} />
+              <Pressable style={styles.dropdownOverlay} onPress={() => setActiveDropdown(null)} testID="fav-dropdown-overlay" />
             )}
             <View style={styles.toolbarScroll}>
               <View style={styles.toolbarLeft}>
-                <Pressable style={styles.filterTrigger} onPress={() => setActiveDropdown(activeDropdown === 'dept' ? null : 'dept')}>
-                  <Text style={styles.filterText}>{language === 'ru' ? 'Отдел' : language === 'uz' ? 'Departament' : 'Department'}</Text>
-                  <ChevronDown size={14} color="#757575" strokeWidth={1.5} />
-                </Pressable>
-                <Pressable style={styles.filterTrigger} onPress={() => setActiveDropdown(activeDropdown === 'cat' ? null : 'cat')}>
-                  <Text style={styles.filterText}>{language === 'ru' ? 'Категории' : language === 'uz' ? 'Kategoriyalar' : 'Categories'}</Text>
-                  <ChevronDown size={14} color="#757575" strokeWidth={1.5} />
-                </Pressable>
-                <Pressable style={styles.filterTrigger} onPress={() => setActiveDropdown(activeDropdown === 'avail' ? null : 'avail')}>
-                  <Text style={styles.filterText}>{language === 'ru' ? 'Наличие' : language === 'uz' ? 'Mavjudlik' : 'Availability'}</Text>
-                  <ChevronDown size={14} color="#757575" strokeWidth={1.5} />
-                </Pressable>
+                {([
+                  { id: 'dept', label: language === 'ru' ? 'Отдел' : language === 'uz' ? 'Departament' : 'Department' },
+                  { id: 'cat', label: language === 'ru' ? 'Категории' : language === 'uz' ? 'Kategoriyalar' : 'Categories' },
+                  { id: 'avail', label: language === 'ru' ? 'Наличие' : language === 'uz' ? 'Mavjudlik' : 'Availability' },
+                ]).map((f) => {
+                  const isOpen = activeDropdown === f.id;
+                  return (
+                    <View key={f.id} style={{ position: 'relative', zIndex: isOpen ? 100 : 1 }}>
+                      <Pressable
+                        onPress={() => setActiveDropdown(isOpen ? null : f.id)}
+                        style={StyleSheet.flatten([styles.filterDropdown, isOpen && styles.filterDropdownOpen])}
+                      >
+                        <View style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>
+                          <ChevronDown size={14} color={isOpen ? '#000000' : '#757575'} strokeWidth={1.5} />
+                        </View>
+                        <Text style={StyleSheet.flatten([styles.filterDropdownText, isOpen && styles.filterDropdownTextOpen])}>{f.label}</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
               </View>
-              <View style={styles.toolbarRightGroup}>
-                <Text style={styles.itemCountText}>
+              <View style={styles.toolbarRight}>
+                <Text style={styles.productCountText}>
                   {filteredFavorites.length} {language === 'ru' ? 'товаров' : language === 'uz' ? 'ta mahsulot' : 'items'}
                 </Text>
-                <View style={{ position: 'relative' }}>
+                <View style={{ position: 'relative', zIndex: activeDropdown === 'sort' ? 100 : 1 }}>
                   <Pressable
-                    style={[styles.sortTrigger, activeDropdown === 'sort' && styles.sortTriggerActive]}
                     onPress={() => setActiveDropdown(activeDropdown === 'sort' ? null : 'sort')}
+                    style={StyleSheet.flatten([styles.sortDropdown, activeDropdown === 'sort' && styles.filterDropdownOpen])}
                   >
-                    <Text style={[styles.sortText, activeDropdown === 'sort' && styles.sortTextActive]}>{t(SORT_KEYS[sortBy])}</Text>
-                    <ChevronDown size={14} color={activeDropdown === 'sort' ? '#000000' : '#757575'} strokeWidth={1.5} />
+                    <View style={{ transform: [{ rotate: activeDropdown === 'sort' ? '180deg' : '0deg' }] }}>
+                      <ChevronDown size={14} color={activeDropdown === 'sort' ? '#000000' : '#757575'} strokeWidth={1.5} />
+                    </View>
+                    <Text style={StyleSheet.flatten([styles.sortDropdownText, activeDropdown === 'sort' && styles.filterDropdownTextOpen])}>
+                      {t(SORT_KEYS[sortBy])}
+                    </Text>
                   </Pressable>
+
                   {activeDropdown === 'sort' && (
-                    <View style={styles.sortDropdownMenuLuxury}>
+                    <View style={styles.sortDropdownPanel}>
                       {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
                         <Pressable
                           key={key}
-                          style={styles.sortOptionLuxury}
+                          style={styles.sortOption}
                           onPress={() => { setSortBy(key); setActiveDropdown(null); }}
                         >
-                          <Text style={[styles.sortOptionTextLuxury, sortBy === key && styles.sortOptionTextLuxuryActive]}>
+                          <Text style={StyleSheet.flatten([styles.sortOptionText, sortBy === key && styles.sortOptionTextActive])}>
                             {t(SORT_KEYS[key])}
                           </Text>
                         </Pressable>
@@ -718,91 +731,106 @@ const styles = StyleSheet.create({
     width: '100%',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E5E5E5',
+    marginBottom: 24,
     backgroundColor: '#FFFFFF',
     zIndex: 100,
-    marginBottom: 40,
+    elevation: 10,
   },
   toolbarScroll: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     width: '100%',
     maxWidth: 1380,
     alignSelf: 'center',
+    flex: 1,
+    height: 50,
     paddingHorizontal: 24,
-    position: 'relative',
-    zIndex: 100,
+    overflow: 'visible' as any,
   },
-  toolbarRightGroup: {
+  toolbarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 24,
+    gap: 12,
+    marginLeft: -12,
   },
-  filterTrigger: {
+  toolbarRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 16,
+    justifyContent: 'flex-end',
+    gap: 16,
+    marginRight: -12,
   },
-  itemCountText: {
-    fontSize: 13,
+  filterDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 50,
+  },
+  sortDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 50,
+  },
+  filterDropdownOpen: {
+    backgroundColor: '#F5F5F5',
+    height: 51,
+    marginBottom: -1,
+  },
+  filterDropdownText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
     color: '#757575',
+    marginLeft: 5,
     fontFamily: LUXURY_FONT,
   },
-  sortTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: 'transparent',
+  filterDropdownTextOpen: {
+    color: '#000000',
   },
-  sortTriggerActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#EEEEEE',
-    borderBottomWidth: 0,
-    marginTop: -1,
-  },
-  sortText: {
-    fontSize: 13,
-    color: '#757575',
-    fontFamily: LUXURY_FONT,
-  },
-  sortTextActive: {
+  productCountText: {
+    fontSize: 15,
     color: '#000000',
     fontWeight: '500' as const,
+    fontFamily: LUXURY_FONT,
   },
-  sortDropdownMenuLuxury: {
+  sortDropdownText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+    color: '#000000',
+    marginLeft: 5,
+    fontFamily: LUXURY_FONT,
+  },
+  sortDropdownPanel: {
     position: 'absolute',
-    top: '100%',
+    top: 51,
     right: 0,
-    width: 240,
+    width: 200,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
-    paddingVertical: 12,
-    shadowColor: '#000',
+    borderTopWidth: 0,
+    borderColor: '#E5E5E5',
+    paddingVertical: 16,
+    paddingHorizontal: 0,
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
-    elevation: 10,
-    zIndex: 500,
+    elevation: 99,
+    zIndex: 9999,
   },
-  sortOptionLuxury: {
-    paddingVertical: 12,
+  sortOption: {
+    paddingVertical: 10,
     paddingHorizontal: 24,
   },
-  sortOptionTextLuxury: {
+  sortOptionText: {
     fontSize: 13,
-    color: '#757575',
+    color: '#777777',
+    fontWeight: '400' as const,
     fontFamily: LUXURY_FONT,
-    textAlign: 'right' as const,
   },
-  sortOptionTextLuxuryActive: {
+  sortOptionTextActive: {
     color: '#000000',
     fontWeight: '500' as const,
   },
@@ -810,12 +838,6 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'stretch',
     gap: 12,
-  },
-  toolbarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 32,
-    flexShrink: 0,
   },
   sortDropdownWrap: {
     position: 'relative',
@@ -896,11 +918,6 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     color: '#555',
   },
-  toolbarRight: {
-    flex: 1,
-    minWidth: 180,
-    ...(Platform.OS === 'web' ? { maxWidth: 400 } : {}),
-  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -917,9 +934,14 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? { outlineStyle: 'none' as any } : {}),
   },
   dropdownOverlay: {
-    ...(Platform.OS === 'web'
-      ? { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }
-      : { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }),
+    position: Platform.OS === 'web' ? ('fixed' as any) : 'absolute',
+    top: Platform.OS === 'web' ? 0 : -5000,
+    left: Platform.OS === 'web' ? 0 : -5000,
+    right: Platform.OS === 'web' ? 0 : -5000,
+    bottom: Platform.OS === 'web' ? 0 : -5000,
+    backgroundColor: 'transparent',
+    zIndex: 90,
+    ...(Platform.OS === 'web' ? ({ cursor: 'default' } as any) : {}),
   },
   favGrid: {
     flexDirection: 'row',
