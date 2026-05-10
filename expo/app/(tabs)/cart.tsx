@@ -1029,7 +1029,7 @@ const styles = StyleSheet.create({
 
   editorialSection: {
     width: '100%',
-    maxWidth: 1142,
+    maxWidth: 1380,
     alignSelf: 'center',
     paddingHorizontal: 24,
     marginTop: 60,
