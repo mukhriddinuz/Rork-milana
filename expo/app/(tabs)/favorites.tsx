@@ -288,7 +288,7 @@ export default function FavoritesScreen() {
                 ]).map((f) => {
                   const isOpen = activeDropdown === f.id;
                   return (
-                    <View key={f.id} style={{ position: 'relative', zIndex: isOpen ? 100 : 1 }}>
+                    <View key={f.id} style={{ position: 'relative', zIndex: isOpen ? 9999 : 1 }}>
                       <Pressable
                         onPress={() => setActiveDropdown(isOpen ? null : f.id)}
                         style={StyleSheet.flatten([styles.filterDropdown, isOpen && styles.filterDropdownOpen])}
@@ -311,7 +311,7 @@ export default function FavoritesScreen() {
                             }
                             const finalLabel = displayOpt.charAt(0).toUpperCase() + displayOpt.slice(1).toLowerCase();
                             return (
-                              <Pressable key={i} style={styles.dropdownOption} onPress={() => toggleFilterOption(f.id, opt)} testID={`fav-${f.id}-opt-${i}`}>
+                              <Pressable key={i} style={styles.dropdownOption} onPress={(e: any) => { e?.stopPropagation?.(); toggleFilterOption(f.id, opt); }} testID={`fav-${f.id}-opt-${i}`}>
                                 <View style={StyleSheet.flatten([styles.dropdownCheckbox, isSelected && styles.dropdownCheckboxActive])}>
                                   {isSelected && <View style={styles.dropdownCheckboxInner} />}
                                 </View>
@@ -326,12 +326,12 @@ export default function FavoritesScreen() {
                           )}
 
                           <View style={styles.dropdownActions}>
-                            <Pressable style={styles.applyBtn} onPress={() => setActiveDropdown(null)}>
+                            <Pressable style={styles.applyBtn} onPress={(e: any) => { e?.stopPropagation?.(); setActiveDropdown(null); }}>
                               <Text style={styles.applyBtnText}>{(language === 'ru' ? 'ПРИМЕНИТЬ' : language === 'uz' ? "QO'LLASH" : 'APPLY')}</Text>
                             </Pressable>
                             <Pressable
                               style={StyleSheet.flatten([styles.applyBtn, { backgroundColor: '#F5F5F5', marginTop: 8 }])}
-                              onPress={() => setSelectedFilters((prev) => ({ ...prev, [f.id]: [] }))}
+                              onPress={(e: any) => { e?.stopPropagation?.(); setSelectedFilters((prev) => ({ ...prev, [f.id]: [] })); }}
                             >
                               <Text style={StyleSheet.flatten([styles.applyBtnText, { color: '#000000' }])}>{language === 'ru' ? 'СБРОСИТЬ' : language === 'uz' ? 'TOZALASH' : 'CLEAR'}</Text>
                             </Pressable>
@@ -346,7 +346,7 @@ export default function FavoritesScreen() {
                 <Text style={styles.productCountText}>
                   {filteredFavorites.length} {language === 'ru' ? 'товаров' : language === 'uz' ? 'ta mahsulot' : 'items'}
                 </Text>
-                <View style={{ position: 'relative', zIndex: activeDropdown === 'sort' ? 100 : 1 }}>
+                <View style={{ position: 'relative', zIndex: activeDropdown === 'sort' ? 9999 : 1 }}>
                   <Pressable
                     style={StyleSheet.flatten([styles.sortTrigger, activeDropdown === 'sort' && styles.sortTriggerActive])}
                     onPress={(e: any) => { e?.stopPropagation?.(); setActiveDropdown(activeDropdown === 'sort' ? null : 'sort'); }}
@@ -1119,7 +1119,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
-    zIndex: 1000,
+    zIndex: 10,
     ...(Platform.OS === 'web' ? ({ cursor: 'default' } as any) : {}),
   },
   favGrid: {
