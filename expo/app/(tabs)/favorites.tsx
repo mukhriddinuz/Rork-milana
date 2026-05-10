@@ -4,15 +4,12 @@ import {
   Text,
   ScrollView,
   Pressable,
-  TextInput,
   StyleSheet,
-  useWindowDimensions,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart, ArrowRight, Search, ChevronDown, Check, Package, Truck, Shirt } from 'lucide-react-native';
+import { Heart, ChevronDown, Check, Package, Truck, Shirt } from 'lucide-react-native';
 import { Image } from 'expo-image';
-import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useCart } from '@/contexts/CartContext';
@@ -22,7 +19,7 @@ import CatalogCard from '@/components/CatalogCard';
 import QuickViewModal from '@/components/QuickViewModal';
 import { Product } from '@/types';
 import { useWebHeader } from '@/contexts/WebHeaderContext';
-import WebHeader, { TOTAL_HEADER_HEIGHT } from '@/components/WebHeader';
+import WebHeader from '@/components/WebHeader';
 import MobileHeader from '@/components/MobileHeader';
 import { MOBILE_HEADER_HEIGHT } from '@/components/MobileHeader';
 import GlobalFooter from '@/components/GlobalFooter';
@@ -96,7 +93,6 @@ const SORT_KEYS: Record<SortOption, string> = {
 
 export default function FavoritesScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const { language, t, user } = useAuth();
   const { search, setSearch, setSelectedCategory } = useWebHeader();
   const { products } = useProducts();
@@ -212,7 +208,7 @@ export default function FavoritesScreen() {
           </Text>
           {!user && (
             <View style={styles.authPromptBox}>
-              <Text style={styles.authPromptText}>
+              <Text style={styles.authSubtitle}>
                 {language === 'ru'
                   ? 'Создайте учётную запись, чтобы сохранять товары в списке желаний и узнавать о новинках первыми.'
                   : language === 'uz'
@@ -231,13 +227,35 @@ export default function FavoritesScreen() {
             </View>
           )}
         </View>
-        <View style={styles.breadcrumbContainer}>
-          <Pressable onPress={() => router.push('/(tabs)/catalog')}>
-            <Text style={styles.breadcrumbInactive}>{t('mainPage')}</Text>
-          </Pressable>
-          <Text style={styles.breadcrumbSeparator}> — </Text>
-          <Text style={styles.breadcrumbActive}>{t('favorites')}</Text>
-        </View>
+        {hasFavorites && (
+          <View style={styles.filterBarWrapper}>
+            <View style={styles.filterBarContent}>
+              <View style={styles.filterGroupLeft}>
+                <Pressable style={styles.filterChip}>
+                  <Text style={styles.filterText}>{language === 'ru' ? 'Отдел' : language === 'uz' ? 'Departament' : 'Department'}</Text>
+                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                </Pressable>
+                <Pressable style={styles.filterChip}>
+                  <Text style={styles.filterText}>{language === 'ru' ? 'Категории' : language === 'uz' ? 'Kategoriyalar' : 'Categories'}</Text>
+                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                </Pressable>
+                <Pressable style={styles.filterChip} onPress={() => setInStockOnly(!inStockOnly)}>
+                  <Text style={styles.filterText}>{language === 'ru' ? 'Наличие' : language === 'uz' ? 'Mavjudlik' : 'Availability'}</Text>
+                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                </Pressable>
+              </View>
+              <View style={styles.filterGroupRight}>
+                <Text style={styles.filterText}>
+                  {filteredFavorites.length} {language === 'ru' ? 'товаров' : language === 'uz' ? 'ta mahsulot' : 'items'}
+                </Text>
+                <Pressable style={styles.filterChip} onPress={() => setSortDropdownOpen(!sortDropdownOpen)}>
+                  <Text style={styles.filterText}>{t(SORT_KEYS[sortBy])}</Text>
+                  <ChevronDown size={12} color="#757575" strokeWidth={1.5} />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
         {!hasFavorites ? (
           <>
             <View style={styles.emptyContainer}>
@@ -271,71 +289,25 @@ export default function FavoritesScreen() {
           </>
         ) : (
           <>
-            <View style={[styles.toolbar, !isDesktop && styles.toolbarMobile]}>
-              <View style={styles.toolbarLeft}>
-                <View style={styles.sortDropdownWrap}>
+            {sortDropdownOpen && (
+              <View style={styles.sortDropdownMenuFloat}>
+                {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
                   <Pressable
-                    style={styles.sortDropdownBtn}
-                    onPress={() => setSortDropdownOpen(!sortDropdownOpen)}
-                    testID="favorites-sort-btn"
+                    key={key}
+                    style={[styles.sortDropdownItem, sortBy === key && styles.sortDropdownItemActive]}
+                    onPress={() => {
+                      setSortBy(key);
+                      setSortDropdownOpen(false);
+                    }}
                   >
-                    <Text style={styles.sortDropdownText} numberOfLines={1}>
-                      {t(SORT_KEYS[sortBy])}
+                    <Text style={[styles.sortDropdownItemText, sortBy === key && styles.sortDropdownItemTextActive]}>
+                      {t(SORT_KEYS[key])}
                     </Text>
-                    <ChevronDown
-                      size={14}
-                      color="#666"
-                      strokeWidth={2}
-                      style={sortDropdownOpen ? { transform: [{ rotate: '180deg' }] } : undefined}
-                    />
+                    {sortBy === key && <Check size={14} color="#000000" strokeWidth={2.5} />}
                   </Pressable>
-                  {sortDropdownOpen && (
-                    <View style={styles.sortDropdownMenu}>
-                      {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
-                        <Pressable
-                          key={key}
-                          style={[styles.sortDropdownItem, sortBy === key && styles.sortDropdownItemActive]}
-                          onPress={() => {
-                            setSortBy(key);
-                            setSortDropdownOpen(false);
-                          }}
-                        >
-                          <Text style={[styles.sortDropdownItemText, sortBy === key && styles.sortDropdownItemTextActive]}>
-                            {t(SORT_KEYS[key])}
-                          </Text>
-                          {sortBy === key && <Check size={14} color="#223c63" strokeWidth={2.5} />}
-                        </Pressable>
-                      ))}
-                    </View>
-                  )}
-                </View>
-
-                <Pressable
-                  style={styles.checkboxRow}
-                  onPress={() => setInStockOnly(!inStockOnly)}
-                  testID="favorites-in-stock"
-                >
-                  <View style={[styles.checkbox, inStockOnly && styles.checkboxActive]}>
-                    {inStockOnly && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
-                  </View>
-                  <Text style={styles.checkboxLabel}>{t('inStock')}</Text>
-                </Pressable>
+                ))}
               </View>
-
-              <View style={styles.toolbarRight}>
-                <View style={styles.searchBar}>
-                  <Search size={16} color="#999" strokeWidth={2} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder={t('searchByNameSku')}
-                    placeholderTextColor="#BBBBBB"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    testID="favorites-search"
-                  />
-                </View>
-              </View>
-            </View>
+            )}
 
             {sortDropdownOpen && (
               <Pressable
@@ -511,7 +483,7 @@ const styles = StyleSheet.create({
   },
   pageHeader: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 80,
     marginBottom: 40,
     paddingHorizontal: 24,
   },
@@ -519,26 +491,84 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '500' as const,
     color: '#000000',
-    marginBottom: 16,
+    marginBottom: 24,
     fontFamily: LUXURY_FONT,
     textAlign: 'center' as const,
   },
   authPromptBox: {
     alignItems: 'center',
-    maxWidth: 600,
+    maxWidth: 700,
   },
-  authPromptText: {
+  authSubtitle: {
     fontSize: 13,
     color: '#757575',
     textAlign: 'center' as const,
-    lineHeight: 20,
-    marginBottom: 24,
+    lineHeight: 22,
+    marginBottom: 32,
     fontFamily: LUXURY_FONT,
   },
   authBtn: {
     backgroundColor: '#000000',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
+  filterBarWrapper: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 40,
+  },
+  filterBarContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    maxWidth: 1380,
+    width: '100%',
+    alignSelf: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    flexWrap: 'wrap',
+    gap: 16,
+  },
+  filterGroupLeft: {
+    flexDirection: 'row',
+    gap: 32,
+    flexWrap: 'wrap',
+  },
+  filterGroupRight: {
+    flexDirection: 'row',
+    gap: 32,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  filterText: {
+    fontSize: 13,
+    color: '#757575',
+    fontWeight: '400' as const,
+    fontFamily: LUXURY_FONT,
+  },
+  sortDropdownMenuFloat: {
+    position: 'absolute',
+    top: 110,
+    right: 24,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 4,
+    minWidth: 240,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 300,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#EEEEEE',
   },
   authBtnText: {
     color: '#FFFFFF',
