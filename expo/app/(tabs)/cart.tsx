@@ -454,6 +454,40 @@ export default function CartScreen() {
             </View>
           </View>
         </View>
+
+        {/* Luxury Editorial Cross-Sell (Cart Only) */}
+        <View style={styles.editorialSection}>
+          <View style={[styles.editorialRow, !isDesktop && styles.editorialRowMobile]}>
+            <Pressable style={styles.editorialBanner} testID="cart-editorial-1">
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=1000&auto=format&fit=crop' }}
+                style={styles.editorialBg}
+                contentFit="cover"
+              />
+              <View style={styles.editorialOverlay}>
+                <Text style={styles.editorialTitle}>Trenddagi sumkalar</Text>
+                <View style={styles.editorialBtn}>
+                  <Text style={styles.editorialBtnText}>HOZIR XARID QILING</Text>
+                </View>
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.editorialBanner} testID="cart-editorial-2">
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?q=80&w=1000&auto=format&fit=crop' }}
+                style={styles.editorialBg}
+                contentFit="cover"
+              />
+              <View style={styles.editorialOverlay}>
+                <Text style={styles.editorialTitle}>Bayram liboslari</Text>
+                <View style={styles.editorialBtn}>
+                  <Text style={styles.editorialBtnText}>HOZIR XARID QILING</Text>
+                </View>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
         <GlobalFooter />
       </Animated.ScrollView>
       {renderQuickView()}
@@ -927,6 +961,69 @@ const styles = StyleSheet.create({
     color: '#757575',
     textAlign: 'center' as const,
     lineHeight: 20,
+    fontFamily: LUXURY_FONT,
+  },
+
+  editorialSection: {
+    width: '100%',
+    maxWidth: 1400,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    marginTop: 80,
+    marginBottom: 60,
+  },
+  editorialRow: {
+    flexDirection: 'row',
+    gap: 24,
+    width: '100%',
+  },
+  editorialRowMobile: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  editorialBanner: {
+    flex: 1,
+    height: 400,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#F5F5F5',
+  },
+  editorialBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  editorialOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  editorialTitle: {
+    fontSize: 28,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+    marginBottom: 24,
+    textAlign: 'center' as const,
+    letterSpacing: 1,
+    fontFamily: LUXURY_FONT,
+  },
+  editorialBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  editorialBtnText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#000000',
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
     fontFamily: LUXURY_FONT,
   },
 });
