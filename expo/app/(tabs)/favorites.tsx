@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   pageHeader: {
     alignItems: 'center',
-    marginTop: 80,
+    marginTop: 180,
     marginBottom: 40,
     paddingHorizontal: 24,
   },
