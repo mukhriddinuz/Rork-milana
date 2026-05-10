@@ -305,6 +305,69 @@ export default function CartScreen() {
               </Pressable>
             </View>
           </View>
+
+          {/* Luxury Editorial Cross-Sell (Cart Only) */}
+          <View style={styles.editorialSection}>
+            <View style={[styles.editorialRow, !isDesktop && styles.editorialRowMobile]}>
+              <Pressable style={styles.editorialBanner} testID="cart-empty-editorial-1">
+                <Image
+                  source={{ uri: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=1000&auto=format&fit=crop' }}
+                  style={styles.editorialBg}
+                  contentFit="cover"
+                />
+                <View style={styles.editorialOverlay}>
+                  <Text style={styles.editorialTitle}>Trenddagi sumkalar</Text>
+                  <View style={styles.editorialBtn}>
+                    <Text style={styles.editorialBtnText}>HOZIR XARID QILING</Text>
+                  </View>
+                </View>
+              </Pressable>
+
+              <Pressable style={styles.editorialBanner} testID="cart-empty-editorial-2">
+                <Image
+                  source={{ uri: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?q=80&w=1000&auto=format&fit=crop' }}
+                  style={styles.editorialBg}
+                  contentFit="cover"
+                />
+                <View style={styles.editorialOverlay}>
+                  <Text style={styles.editorialTitle}>Bayram liboslari</Text>
+                  <View style={styles.editorialBtn}>
+                    <Text style={styles.editorialBtnText}>HOZIR XARID QILING</Text>
+                  </View>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.trustSection}>
+            <View style={styles.trustVerticalLine} />
+            <Text style={styles.trustBrandTitle}>MILANA PREMIUM</Text>
+            <Text style={styles.trustPhilosophyText}>
+              Biz faqat eng sifatli tabiiy materiallardan — paxta, viskoza, ipak va bambuk tolasidan — tikish uchun foydalanamiz. Har bir kiyim nafisligi, qulayligi va uzoq muddat xizmat qilishi bilan ajralib turadi. Milana Premium — bu sizning kundalik hayotingizga hashamat olib keluvchi brend.
+            </Text>
+            <Text style={styles.trustPhilosophyText}>
+              Мы используем только лучшие натуральные материалы — хлопок, вискозу, шёлк и бамбуковое волокно. Каждое изделие отличается утончённостью, комфортом и долговечностью. Milana Premium — бренд, привносящий роскошь в вашу повседневную жизнь.
+            </Text>
+
+            <View style={[styles.trustFeaturesRow, !isDesktop && styles.trustFeaturesRowMobile]}>
+              <View style={styles.trustFeatureItem}>
+                <Shirt size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+                <Text style={styles.trustFeatureTitle}>EKSKLYUZIV DIZAYN</Text>
+                <Text style={styles.trustFeatureDesc}>Xaridor istagiga ko&apos;ra individual modellar yaratish va premium darajada tikish xizmati.</Text>
+              </View>
+              <View style={styles.trustFeatureItem}>
+                <Package size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+                <Text style={styles.trustFeatureTitle}>ULGURJI HAMKORLIK</Text>
+                <Text style={styles.trustFeatureDesc}>Biznesingiz uchun yuqori sifatli kiyimlarni eng qulay shartlarda yetkazib berish.</Text>
+              </View>
+              <View style={styles.trustFeatureItem}>
+                <Truck size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+                <Text style={styles.trustFeatureTitle}>MDH BO&apos;YLAB LOGISTIKA</Text>
+                <Text style={styles.trustFeatureDesc}>Har qanday davlatga ishonchli, tezkor va xavfsiz yetkazib berish kafolati.</Text>
+              </View>
+            </View>
+          </View>
+
           <GlobalFooter />
         </Animated.ScrollView>
         {renderQuickView()}
@@ -426,35 +489,6 @@ export default function CartScreen() {
           </View>
         </View>
 
-        <View style={styles.trustSection}>
-          <View style={styles.trustVerticalLine} />
-          <Text style={styles.trustBrandTitle}>MILANA PREMIUM</Text>
-          <Text style={styles.trustPhilosophyText}>
-            Biz faqat eng sifatli tabiiy materiallardan — paxta, viskoza, ipak va bambuk tolasidan — tikish uchun foydalanamiz. Har bir kiyim nafisligi, qulayligi va uzoq muddat xizmat qilishi bilan ajralib turadi. Milana Premium — bu sizning kundalik hayotingizga hashamat olib keluvchi brend.
-          </Text>
-          <Text style={styles.trustPhilosophyText}>
-            Мы используем только лучшие натуральные материалы — хлопок, вискозу, шёлк и бамбуковое волокно. Каждое изделие отличается утончённостью, комфортом и долговечностью. Milana Premium — бренд, привносящий роскошь в вашу повседневную жизнь.
-          </Text>
-
-          <View style={[styles.trustFeaturesRow, !isDesktop && styles.trustFeaturesRowMobile]}>
-            <View style={styles.trustFeatureItem}>
-              <Shirt size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
-              <Text style={styles.trustFeatureTitle}>EKSKLYUZIV DIZAYN</Text>
-              <Text style={styles.trustFeatureDesc}>Xaridor istagiga ko&apos;ra individual modellar yaratish va premium darajada tikish xizmati.</Text>
-            </View>
-            <View style={styles.trustFeatureItem}>
-              <Package size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
-              <Text style={styles.trustFeatureTitle}>ULGURJI HAMKORLIK</Text>
-              <Text style={styles.trustFeatureDesc}>Biznesingiz uchun yuqori sifatli kiyimlarni eng qulay shartlarda yetkazib berish.</Text>
-            </View>
-            <View style={styles.trustFeatureItem}>
-              <Truck size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
-              <Text style={styles.trustFeatureTitle}>MDH BO&apos;YLAB LOGISTIKA</Text>
-              <Text style={styles.trustFeatureDesc}>Har qanday davlatga ishonchli, tezkor va xavfsiz yetkazib berish kafolati.</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Luxury Editorial Cross-Sell (Cart Only) */}
         <View style={styles.editorialSection}>
           <View style={[styles.editorialRow, !isDesktop && styles.editorialRowMobile]}>
@@ -485,6 +519,35 @@ export default function CartScreen() {
                 </View>
               </View>
             </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.trustSection}>
+          <View style={styles.trustVerticalLine} />
+          <Text style={styles.trustBrandTitle}>MILANA PREMIUM</Text>
+          <Text style={styles.trustPhilosophyText}>
+            Biz faqat eng sifatli tabiiy materiallardan — paxta, viskoza, ipak va bambuk tolasidan — tikish uchun foydalanamiz. Har bir kiyim nafisligi, qulayligi va uzoq muddat xizmat qilishi bilan ajralib turadi. Milana Premium — bu sizning kundalik hayotingizga hashamat olib keluvchi brend.
+          </Text>
+          <Text style={styles.trustPhilosophyText}>
+            Мы используем только лучшие натуральные материалы — хлопок, вискозу, шёлк и бамбуковое волокно. Каждое изделие отличается утончённостью, комфортом и долговечностью. Milana Premium — бренд, привносящий роскошь в вашу повседневную жизнь.
+          </Text>
+
+          <View style={[styles.trustFeaturesRow, !isDesktop && styles.trustFeaturesRowMobile]}>
+            <View style={styles.trustFeatureItem}>
+              <Shirt size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>EKSKLYUZIV DIZAYN</Text>
+              <Text style={styles.trustFeatureDesc}>Xaridor istagiga ko&apos;ra individual modellar yaratish va premium darajada tikish xizmati.</Text>
+            </View>
+            <View style={styles.trustFeatureItem}>
+              <Package size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>ULGURJI HAMKORLIK</Text>
+              <Text style={styles.trustFeatureDesc}>Biznesingiz uchun yuqori sifatli kiyimlarni eng qulay shartlarda yetkazib berish.</Text>
+            </View>
+            <View style={styles.trustFeatureItem}>
+              <Truck size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>MDH BO&apos;YLAB LOGISTIKA</Text>
+              <Text style={styles.trustFeatureDesc}>Har qanday davlatga ishonchli, tezkor va xavfsiz yetkazib berish kafolati.</Text>
+            </View>
           </View>
         </View>
 
@@ -969,7 +1032,7 @@ const styles = StyleSheet.create({
     maxWidth: 1400,
     alignSelf: 'center',
     paddingHorizontal: 24,
-    marginTop: 80,
+    marginTop: 40,
     marginBottom: 60,
   },
   editorialRow: {
