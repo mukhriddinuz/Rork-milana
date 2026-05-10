@@ -231,6 +231,9 @@ export default function FavoritesScreen() {
 
   return (
     <View style={styles.container}>
+      {activeDropdown !== null && (
+        <Pressable style={styles.dropdownOverlay} onPress={() => setActiveDropdown(null)} testID="fav-dropdown-overlay-global" />
+      )}
       <WebHeader
         search={search}
         onSearchChange={setSearch}
@@ -276,9 +279,6 @@ export default function FavoritesScreen() {
         </View>
         {hasFavorites && (
           <View style={styles.toolbar}>
-            {activeDropdown !== null && (
-              <Pressable style={styles.dropdownOverlay} onPress={() => setActiveDropdown(null)} testID="fav-dropdown-overlay" />
-            )}
             <View style={styles.toolbarScroll}>
               <View style={styles.toolbarLeft}>
                 {([
@@ -359,7 +359,7 @@ export default function FavoritesScreen() {
                   </Pressable>
 
                   {activeDropdown === 'sort' && (
-                    <View style={styles.sortDropdownMenu}>
+                    <View style={styles.sortDropdownPanel}>
                       {(Object.keys(SORT_KEYS) as SortOption[]).map((key) => (
                         <Pressable
                           key={key}
@@ -608,6 +608,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     paddingVertical: 14,
     paddingHorizontal: 40,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   filterBarWrapper: {
     width: '100%',
@@ -820,8 +821,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
     marginBottom: 24,
     backgroundColor: '#FFFFFF',
-    zIndex: 100,
-    elevation: 10,
+    zIndex: 2000,
+    elevation: 20,
   },
   toolbarScroll: {
     flexDirection: 'row',
@@ -853,6 +854,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     height: 50,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   sortDropdown: {
     flexDirection: 'row',
@@ -870,6 +872,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderColor: 'transparent',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   sortTriggerActive: {
     backgroundColor: '#F5F5F5',
@@ -929,12 +932,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
-    elevation: 99,
-    zIndex: 9999,
+    elevation: 100,
+    zIndex: 5000,
   },
   sortOption: {
     paddingVertical: 10,
     paddingHorizontal: 24,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   sortOptionText: {
     fontSize: 13,
@@ -961,14 +965,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 16,
-    elevation: 99,
-    zIndex: 9999,
+    elevation: 100,
+    zIndex: 5000,
   },
   dropdownOption: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     gap: 12,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   dropdownCheckbox: {
     width: 14,
@@ -1005,6 +1010,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   applyBtnText: {
     color: '#FFFFFF',
@@ -1108,12 +1114,12 @@ const styles = StyleSheet.create({
   },
   dropdownOverlay: {
     position: Platform.OS === 'web' ? ('fixed' as any) : 'absolute',
-    top: Platform.OS === 'web' ? 0 : -5000,
-    left: Platform.OS === 'web' ? 0 : -5000,
-    right: Platform.OS === 'web' ? 0 : -5000,
-    bottom: Platform.OS === 'web' ? 0 : -5000,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'transparent',
-    zIndex: 90,
+    zIndex: 1000,
     ...(Platform.OS === 'web' ? ({ cursor: 'default' } as any) : {}),
   },
   favGrid: {
