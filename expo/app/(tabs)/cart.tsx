@@ -320,7 +320,8 @@ export default function CartScreen() {
   const colTotalLabel = language === 'uz' ? 'Jami' : language === 'ru' ? 'Сумма' : 'Subtotal';
 
   const summaryTotalLabel = language === 'uz' ? 'Jami :' : language === 'ru' ? 'Итого :' : 'Subtotal :';
-  const summaryShippingLabel = language === 'uz' ? 'Yetkazib berish bepul :' : language === 'ru' ? 'Бесплатная доставка :' : 'Free shipping :';
+  const summaryShippingLabel = language === 'uz' ? 'Yetkazib berish :' : language === 'ru' ? 'Доставка :' : 'Shipping :';
+  const summaryShippingValue = language === 'uz' ? "Masofaga bog'liq" : language === 'ru' ? 'По расстоянию' : 'Calculated';
   const summaryGrandLabel = language === 'uz' ? 'Umumiy jami :' : language === 'ru' ? 'Общая сумма :' : 'Grand Total :';
 
   return (
@@ -400,7 +401,7 @@ export default function CartScreen() {
               </View>
               <View style={styles.summaryLine}>
                 <Text style={styles.summaryLineLabel}>{summaryShippingLabel}</Text>
-                <Text style={styles.summaryLineValue}>$0.00</Text>
+                <Text style={styles.summaryLineValue}>{summaryShippingValue}</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryLine}>
