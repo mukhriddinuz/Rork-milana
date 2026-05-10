@@ -236,7 +236,7 @@ export default function FavoritesScreen() {
             <View style={styles.toolbarScroll}>
               <View style={styles.toolbarLeft}>
                 {([
-                  { id: 'dept', label: language === 'ru' ? 'Отдел' : language === 'uz' ? 'Departament' : 'Department' },
+                  { id: 'dept', label: language === 'ru' ? 'Отдел' : language === 'uz' ? "Bo'lim" : 'Department' },
                   { id: 'cat', label: language === 'ru' ? 'Категории' : language === 'uz' ? 'Kategoriyalar' : 'Categories' },
                   { id: 'avail', label: language === 'ru' ? 'Наличие' : language === 'uz' ? 'Mavjudlik' : 'Availability' },
                 ]).map((f) => {
