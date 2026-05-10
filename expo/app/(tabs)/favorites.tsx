@@ -10,7 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart, ArrowRight, Search, ChevronDown, Check } from 'lucide-react-native';
+import { Heart, ArrowRight, Search, ChevronDown, Check, Package, Truck, Shirt } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductsContext';
@@ -96,7 +97,7 @@ const SORT_KEYS: Record<SortOption, string> = {
 export default function FavoritesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { language, t } = useAuth();
+  const { language, t, user } = useAuth();
   const { search, setSearch, setSelectedCategory } = useWebHeader();
   const { products } = useProducts();
   const { addToCart, removeFromCart, getQuantity } = useCart();
@@ -205,6 +206,31 @@ export default function FavoritesScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.scrollContentInner, isDesktop && styles.scrollContentInnerDesktop]}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle}>
+            {language === 'ru' ? 'Мой список желаний' : language === 'uz' ? "Mening xohishlarim ro'yxati" : 'My Wishlist'}
+          </Text>
+          {!user && (
+            <View style={styles.authPromptBox}>
+              <Text style={styles.authPromptText}>
+                {language === 'ru'
+                  ? 'Создайте учётную запись, чтобы сохранять товары в списке желаний и узнавать о новинках первыми.'
+                  : language === 'uz'
+                  ? "Siz o'zingizning xohishlar ro'yxatingizga narsalarni saqlash va yangi kelgan mahsulotlarimizdan xabardor bo'lish uchun hisob yaratishingiz mumkin."
+                  : 'Create an account to save items to your wishlist and be the first to hear about new arrivals.'}
+              </Text>
+              <Pressable
+                style={styles.authBtn}
+                onPress={() => router.push('/register' as any)}
+                testID="favorites-register-btn"
+              >
+                <Text style={styles.authBtnText}>
+                  {language === 'ru' ? 'РЕГИСТРАЦИЯ' : language === 'uz' ? "RO'YXATDAN O'TISH" : 'REGISTER'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
         <View style={styles.breadcrumbContainer}>
           <Pressable onPress={() => router.push('/(tabs)/catalog')}>
             <Text style={styles.breadcrumbInactive}>{t('mainPage')}</Text>
@@ -372,6 +398,69 @@ export default function FavoritesScreen() {
           </>
         )}
         </View>
+
+        {/* Luxury Editorial Cross-Sell */}
+        <View style={styles.editorialSection}>
+          <View style={[styles.editorialRow, !isDesktop && styles.editorialRowMobile]}>
+            <Pressable style={styles.editorialBanner} testID="favorites-editorial-1">
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?q=80&w=1000&auto=format&fit=crop' }}
+                style={styles.editorialBg}
+                contentFit="cover"
+              />
+              <View style={styles.editorialOverlay}>
+                <Text style={styles.editorialTitle}>Trenddagi sumkalar</Text>
+                <View style={styles.editorialBtn}>
+                  <Text style={styles.editorialBtnText}>HOZIR XARID QILING</Text>
+                </View>
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.editorialBanner} testID="favorites-editorial-2">
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?q=80&w=1000&auto=format&fit=crop' }}
+                style={styles.editorialBg}
+                contentFit="cover"
+              />
+              <View style={styles.editorialOverlay}>
+                <Text style={styles.editorialTitle}>Bayram liboslari</Text>
+                <View style={styles.editorialBtn}>
+                  <Text style={styles.editorialBtnText}>HOZIR XARID QILING</Text>
+                </View>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.trustSection}>
+          <View style={styles.trustVerticalLine} />
+          <Text style={styles.trustBrandTitle}>MILANA PREMIUM</Text>
+          <Text style={styles.trustPhilosophyText}>
+            Biz faqat eng sifatli tabiiy materiallardan — paxta, viskoza, ipak va bambuk tolasidan — tikish uchun foydalanamiz. Har bir kiyim nafisligi, qulayligi va uzoq muddat xizmat qilishi bilan ajralib turadi. Milana Premium — bu sizning kundalik hayotingizga hashamat olib keluvchi brend.
+          </Text>
+          <Text style={styles.trustPhilosophyText}>
+            Мы используем только лучшие натуральные материалы — хлопок, вискозу, шёлк и бамбуковое волокно. Каждое изделие отличается утончённостью, комфортом и долговечностью. Milana Premium — бренд, привносящий роскошь в вашу повседневную жизнь.
+          </Text>
+
+          <View style={[styles.trustFeaturesRow, !isDesktop && styles.trustFeaturesRowMobile]}>
+            <View style={styles.trustFeatureItem}>
+              <Shirt size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>EKSKLYUZIV DIZAYN</Text>
+              <Text style={styles.trustFeatureDesc}>Xaridor istagiga ko&apos;ra individual modellar yaratish va premium darajada tikish xizmati.</Text>
+            </View>
+            <View style={styles.trustFeatureItem}>
+              <Package size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>ULGURJI HAMKORLIK</Text>
+              <Text style={styles.trustFeatureDesc}>Biznesingiz uchun yuqori sifatli kiyimlarni eng qulay shartlarda yetkazib berish.</Text>
+            </View>
+            <View style={styles.trustFeatureItem}>
+              <Truck size={32} color="#000000" strokeWidth={1} style={{ marginBottom: 16 }} />
+              <Text style={styles.trustFeatureTitle}>MDH BO&apos;YLAB LOGISTIKA</Text>
+              <Text style={styles.trustFeatureDesc}>Har qanday davlatga ishonchli, tezkor va xavfsiz yetkazib berish kafolati.</Text>
+            </View>
+          </View>
+        </View>
+
         <GlobalFooter />
       </ScrollView>
       <QuickViewModal
@@ -410,10 +499,178 @@ const recsStyles = StyleSheet.create({
   },
 });
 
+const LUXURY_FONT = Platform.select({
+  web: 'Futura, "Futura-Medium", sans-serif',
+  default: 'sans-serif',
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  pageHeader: {
+    alignItems: 'center',
+    marginTop: 60,
+    marginBottom: 40,
+    paddingHorizontal: 24,
+  },
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: '500' as const,
+    color: '#000000',
+    marginBottom: 16,
+    fontFamily: LUXURY_FONT,
+    textAlign: 'center' as const,
+  },
+  authPromptBox: {
+    alignItems: 'center',
+    maxWidth: 600,
+  },
+  authPromptText: {
+    fontSize: 13,
+    color: '#757575',
+    textAlign: 'center' as const,
+    lineHeight: 20,
+    marginBottom: 24,
+    fontFamily: LUXURY_FONT,
+  },
+  authBtn: {
+    backgroundColor: '#000000',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+  },
+  authBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 1.5,
+    fontFamily: LUXURY_FONT,
+  },
+  editorialSection: {
+    width: '100%',
+    maxWidth: 1380,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    marginTop: 60,
+    marginBottom: 60,
+  },
+  editorialRow: {
+    flexDirection: 'row',
+    gap: 24,
+    width: '100%',
+  },
+  editorialRowMobile: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  editorialBanner: {
+    flex: 1,
+    height: 362,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#F5F5F5',
+  },
+  editorialBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  editorialOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  editorialTitle: {
+    fontSize: 28,
+    fontWeight: '600' as const,
+    color: '#FFFFFF',
+    marginBottom: 24,
+    textAlign: 'center' as const,
+    letterSpacing: 1,
+    fontFamily: LUXURY_FONT,
+  },
+  editorialBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  editorialBtnText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#000000',
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+    fontFamily: LUXURY_FONT,
+  },
+  trustSection: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 80,
+    maxWidth: 1000,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  trustVerticalLine: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#D4D4D4',
+    marginBottom: 24,
+  },
+  trustBrandTitle: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    letterSpacing: 4,
+    color: '#000000',
+    marginBottom: 24,
+    fontFamily: LUXURY_FONT,
+  },
+  trustPhilosophyText: {
+    fontSize: 13,
+    color: '#757575',
+    textAlign: 'center' as const,
+    lineHeight: 24,
+    marginBottom: 24,
+    maxWidth: 800,
+    fontFamily: LUXURY_FONT,
+  },
+  trustFeaturesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 60,
+    gap: 40,
+  },
+  trustFeaturesRowMobile: {
+    flexDirection: 'column',
+    gap: 48,
+  },
+  trustFeatureItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  trustFeatureTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#000000',
+    letterSpacing: 1.5,
+    marginBottom: 12,
+    textAlign: 'center' as const,
+    fontFamily: LUXURY_FONT,
+  },
+  trustFeatureDesc: {
+    fontSize: 13,
+    color: '#757575',
+    textAlign: 'center' as const,
+    lineHeight: 20,
+    fontFamily: LUXURY_FONT,
   },
   scrollContentOuter: {
     paddingBottom: 0,
