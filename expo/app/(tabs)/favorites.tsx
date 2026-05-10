@@ -109,6 +109,7 @@ export default function FavoritesScreen() {
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewVisible, setQuickViewVisible] = useState(false);
 
@@ -116,6 +117,36 @@ export default function FavoritesScreen() {
     () => products.filter((p) => favoriteIds.includes(p.id) && p.status === 'published' && p.price !== null),
     [products, favoriteIds],
   );
+
+  const getFilterOptions = useCallback((filterId: string): string[] => {
+    switch (filterId) {
+      case 'dept': {
+        const depts = Array.from(new Set(favoriteProducts.map((p) => p.targetAudience))).filter(Boolean);
+        return depts as string[];
+      }
+      case 'cat': {
+        const activeCatIds = Array.from(new Set(favoriteProducts.map((p) => p.category)));
+        const activeCats = activeCatIds.map((id) => {
+          const c = categories.find((cat: any) => cat.id === id);
+          return c ? ((c as any)[language] || (c as any).label || (c as any).name || id) : id;
+        });
+        return Array.from(new Set(activeCats)).filter(Boolean).sort() as string[];
+      }
+      case 'avail': {
+        return [language === 'ru' ? 'В наличии' : language === 'uz' ? 'Sotuvda mavjud' : 'In stock'];
+      }
+      default:
+        return [];
+    }
+  }, [favoriteProducts, categories, language]);
+
+  const toggleFilterOption = useCallback((filterId: string, option: string) => {
+    setSelectedFilters((prev) => {
+      const current = prev[filterId] || [];
+      if (current.includes(option)) return { ...prev, [filterId]: current.filter((o) => o !== option) };
+      return { ...prev, [filterId]: [...current, option] };
+    });
+  }, []);
 
   const filteredFavorites = useMemo(() => {
     let result = [...favoriteProducts];
@@ -134,6 +165,20 @@ export default function FavoritesScreen() {
       result = result.filter((p) => p.status === 'published');
     }
 
+    if ((selectedFilters['dept']?.length ?? 0) > 0) {
+      result = result.filter((p) => p.targetAudience && selectedFilters['dept'].includes(p.targetAudience));
+    }
+    if ((selectedFilters['cat']?.length ?? 0) > 0) {
+      result = result.filter((p) => {
+        const c = categories.find((cat: any) => cat.id === p.category);
+        const label = c ? ((c as any)[language] || (c as any).label || (c as any).name || p.category) : p.category;
+        return selectedFilters['cat'].includes(label);
+      });
+    }
+    if ((selectedFilters['avail']?.length ?? 0) > 0) {
+      result = result.filter((p) => p.status === 'published');
+    }
+
     if (sortBy === 'price_asc') {
       result.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     } else if (sortBy === 'price_desc') {
@@ -141,7 +186,7 @@ export default function FavoritesScreen() {
     }
 
     return result;
-  }, [favoriteProducts, searchQuery, sortBy, inStockOnly, language, categories]);
+  }, [favoriteProducts, searchQuery, sortBy, inStockOnly, language, categories, selectedFilters]);
 
   const paddedFavorites = useMemo(() => {
     const data: (Product | null)[] = [...filteredFavorites];
@@ -255,20 +300,37 @@ export default function FavoritesScreen() {
 
                       {isOpen && (
                         <View style={styles.dropdownPanel}>
-                          <Pressable style={styles.dropdownOption} testID={`fav-${f.id}-opt-1`}>
-                            <View style={styles.dropdownCheckbox} />
-                            <Text style={styles.dropdownOptionText}>{language === 'ru' ? 'Вариант 1' : language === 'uz' ? 'Variant 1' : 'Option 1'}</Text>
-                          </Pressable>
-                          <Pressable style={styles.dropdownOption} testID={`fav-${f.id}-opt-2`}>
-                            <View style={styles.dropdownCheckbox} />
-                            <Text style={styles.dropdownOptionText}>{language === 'ru' ? 'Вариант 2' : language === 'uz' ? 'Variant 2' : 'Option 2'}</Text>
-                          </Pressable>
+                          {getFilterOptions(f.id).map((opt, i) => {
+                            const isSelected = (selectedFilters[f.id] || []).includes(opt);
+                            let displayOpt = opt;
+                            if (f.id === 'dept') {
+                              if (opt === 'men') displayOpt = language === 'ru' ? 'Мужчины' : language === 'uz' ? 'Erkaklar' : 'Men';
+                              else if (opt === 'women') displayOpt = language === 'ru' ? 'Женщины' : language === 'uz' ? 'Ayollar' : 'Women';
+                              else if (opt === 'kids') displayOpt = language === 'ru' ? 'Дети' : language === 'uz' ? 'Bolalar' : 'Kids';
+                            }
+                            return (
+                              <Pressable key={i} style={styles.dropdownOption} onPress={() => toggleFilterOption(f.id, opt)} testID={`fav-${f.id}-opt-${i}`}>
+                                <View style={StyleSheet.flatten([styles.dropdownCheckbox, isSelected && styles.dropdownCheckboxActive])}>
+                                  {isSelected && <View style={styles.dropdownCheckboxInner} />}
+                                </View>
+                                <Text style={styles.dropdownOptionText}>{displayOpt}</Text>
+                              </Pressable>
+                            );
+                          })}
+                          {getFilterOptions(f.id).length === 0 && (
+                            <Text style={StyleSheet.flatten([styles.dropdownOptionText, { color: '#999999', marginBottom: 8 }])}>
+                              {language === 'ru' ? 'Нет вариантов' : language === 'uz' ? "Variantlar yo'q" : 'No options'}
+                            </Text>
+                          )}
 
                           <View style={styles.dropdownActions}>
                             <Pressable style={styles.applyBtn} onPress={() => setActiveDropdown(null)}>
                               <Text style={styles.applyBtnText}>{(language === 'ru' ? 'ПРИМЕНИТЬ' : language === 'uz' ? "QO'LLASH" : 'APPLY')}</Text>
                             </Pressable>
-                            <Pressable style={StyleSheet.flatten([styles.applyBtn, { backgroundColor: '#F5F5F5', marginTop: 8 }])} onPress={() => setActiveDropdown(null)}>
+                            <Pressable
+                              style={StyleSheet.flatten([styles.applyBtn, { backgroundColor: '#F5F5F5', marginTop: 8 }])}
+                              onPress={() => setSelectedFilters((prev) => ({ ...prev, [f.id]: [] }))}
+                            >
                               <Text style={StyleSheet.flatten([styles.applyBtnText, { color: '#000000' }])}>{language === 'ru' ? 'СБРОСИТЬ' : language === 'uz' ? 'TOZALASH' : 'CLEAR'}</Text>
                             </Pressable>
                           </View>
@@ -888,6 +950,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dropdownCheckboxActive: {
+    borderColor: '#000000',
+    backgroundColor: '#000000',
+  },
+  dropdownCheckboxInner: {
+    width: 6,
+    height: 6,
+    backgroundColor: '#FFFFFF',
   },
   dropdownOptionText: {
     fontSize: 13,
