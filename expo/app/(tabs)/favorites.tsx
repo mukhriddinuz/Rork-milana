@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heart, ChevronDown, Package, Truck, Shirt } from 'lucide-react-native';
+import { ChevronDown, Package, Truck, Shirt } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductsContext';
@@ -380,12 +380,6 @@ export default function FavoritesScreen() {
         {!hasFavorites ? (
           <>
             <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconWrap}>
-                <Heart size={120} color="#D4D4D4" strokeWidth={0.8} />
-              </View>
-              <Text style={styles.emptyTitle}>
-                {t('emptyFavTitle')}
-              </Text>
               <Text style={styles.emptySubtext}>
                 {t('emptyFavSubtext')}
               </Text>
@@ -1164,33 +1158,18 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 0,
     paddingHorizontal: 32,
-    marginBottom: 80,
-  },
-  emptyIconWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: {
-    fontSize: 26,
-    fontWeight: '800' as const,
-    fontStyle: 'normal' as const,
-    color: '#1A1A1A',
-    textAlign: 'center' as const,
-    marginTop: 24,
-    letterSpacing: -0.3,
+    marginBottom: 60,
   },
   emptySubtext: {
-    fontSize: 14,
-    fontWeight: '400' as const,
-    fontStyle: 'normal' as const,
-    color: '#777777',
+    fontSize: 13,
+    color: '#757575',
     textAlign: 'center' as const,
     lineHeight: 22,
-    maxWidth: 400,
-    marginTop: 12,
+    maxWidth: 500,
+    fontFamily: LUXURY_FONT,
   },
   emptyBtn: {
     flexDirection: 'row',
