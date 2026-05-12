@@ -127,32 +127,17 @@ function CatalogCard({
     </>
   );
 
-  const newBadge = showNewLabel ? (
-    <View style={styles.newBadgeContainer} pointerEvents="none" testID={`catalog-card-new-${product.id}`}>
-      <Text style={styles.newBadgeText}>{t('newArrival') ?? 'NEW ARRIVAL'}</Text>
-    </View>
-  ) : null;
+  const newBadgeLabel = language === 'uz' ? 'YANGI' : language === 'ru' ? 'НОВИНКА' : (t('newArrival') ?? 'NEW ARRIVAL');
 
-  const actionBar = (
-    <View style={styles.actionBar}>
-      {showCartIcon && (
-        <Pressable
-          onPress={(e) => {
-            (e as any).stopPropagation?.();
-            (e as any).preventDefault?.();
-            handleAdd();
-          }}
-          style={styles.actionIconBtn}
-          hitSlop={8}
-          testID={`catalog-card-bag-${product.id}`}
-        >
-          <ToteIcon
-            size={23}
-            color={inCart ? '#999999' : '#000000'}
-            strokeWidth={1.2}
-            fill={inCart ? '#999999' : 'none'}
-          />
-        </Pressable>
+  const cardHeader = !isMens ? (
+    <View style={styles.cardHeader}>
+      {showNewLabel ? (
+        <View style={styles.newBadge} pointerEvents="none" testID={`catalog-card-new-${product.id}`}>
+          <Text style={styles.newBadgeText}>{newBadgeLabel}</Text>
+          <View style={styles.newBadgeNotch} />
+        </View>
+      ) : (
+        <View />
       )}
       {showHeart && (
         <Pressable
@@ -161,25 +146,24 @@ function CatalogCard({
             (e as any).preventDefault?.();
             handleFavorite();
           }}
-          style={styles.actionIconBtn}
+          style={styles.favButton}
           hitSlop={8}
           testID={`catalog-card-heart-${product.id}`}
         >
           <Heart
-            size={23}
-            color={isFavorite ? '#999999' : '#000000'}
-            fill={isFavorite ? '#999999' : 'transparent'}
-            strokeWidth={1.2}
+            size={20}
+            color={isFavorite ? '#000000' : '#757575'}
+            fill={isFavorite ? '#000000' : 'transparent'}
+            strokeWidth={1.5}
           />
         </Pressable>
       )}
     </View>
-  );
+  ) : null;
 
   return (
     <View style={styles.card} {...webHoverProps}>
-      {newBadge}
-      {!isMens && actionBar}
+      {cardHeader}
       {isWeb && href ? (
         <Link
           href={href as any}
@@ -336,14 +320,19 @@ const styles = StyleSheet.create({
     borderBottomColor: '#000000',
     overflow: 'hidden' as const,
   },
-  actionBar: {
+  cardHeader: {
     flexDirection: 'row' as const,
-    justifyContent: 'flex-end' as const,
-    alignItems: 'center' as const,
-    gap: 12,
-    minHeight: 28,
-    marginBottom: 8,
-    paddingHorizontal: 2,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
+    height: 32,
+    paddingHorizontal: 0,
+    marginBottom: 4,
+  },
+  favButton: {
+    padding: 4,
+    marginRight: -4,
+    zIndex: 10,
+    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as any) : {}),
   },
   actionIconBtn: {
     width: 26,
@@ -408,27 +397,38 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     zIndex: 2,
   },
-  newBadgeContainer: {
-    backgroundColor: '#E6E6FA',
-    borderWidth: 1,
-    borderColor: '#000000',
-    alignSelf: 'flex-start' as const,
-    paddingVertical: 5,
-    paddingHorizontal: 9,
-    marginBottom: 10,
-    zIndex: 10,
+  newBadge: {
     position: 'relative' as const,
+    paddingVertical: 4,
+    paddingHorizontal: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#D4D4D4',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginTop: 2,
   },
   newBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '500' as const,
-    color: '#000000',
-    letterSpacing: 2.5,
+    color: '#555555',
+    letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
     fontFamily: Platform.select({
       web: 'Futura, "Futura-Medium", sans-serif',
-      default: 'sans-serif-medium',
+      default: 'sans-serif',
     }),
+  },
+  newBadgeNotch: {
+    position: 'absolute' as const,
+    bottom: -4,
+    width: 6,
+    height: 6,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#D4D4D4',
+    transform: [{ rotate: '45deg' }],
   },
   image: {
     width: '100%',
