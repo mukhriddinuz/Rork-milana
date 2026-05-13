@@ -25,64 +25,6 @@ import { MOBILE_HEADER_HEIGHT } from '@/components/MobileHeader';
 import GlobalFooter from '@/components/GlobalFooter';
 import { useResponsive } from '@/hooks/useResponsive';
 
-function RecommendationsGrid({
-  products,
-  language,
-  categories,
-  getQuantity,
-  addToCart,
-  removeFromCart,
-  isFavorite,
-  toggleFavorite,
-  onImagePress,
-  isDesktop,
-}: {
-  products: Product[];
-  language: 'uz' | 'ru';
-  categories: any[];
-  getQuantity: (id: string) => number;
-  addToCart: (id: string) => void;
-  removeFromCart: (id: string) => void;
-  isFavorite: (id: string) => boolean;
-  toggleFavorite: (id: string) => void;
-  onImagePress: (p: Product) => void;
-  isDesktop: boolean;
-}) {
-  const numColumns = isDesktop ? 5 : 2;
-  const displayProducts = useMemo(() => {
-    const sliced = products.slice(0, numColumns);
-    const data: (Product | null)[] = [...sliced];
-    const remainder = data.length % numColumns;
-    if (remainder !== 0) {
-      for (let i = 0; i < numColumns - remainder; i++) data.push(null);
-    }
-    return data;
-  }, [products, numColumns]);
-
-  return (
-    <View style={[recsStyles.recsGrid, isDesktop && recsStyles.recsGridDesktop]}>
-      {displayProducts.map((item, idx) => (
-        <View key={item?.id ?? `spacer-${idx}`} style={[recsStyles.cardWrapper, isDesktop && recsStyles.cardWrapperDesktop, { width: `${100 / numColumns}%` as any }]}>
-          {item ? (
-            <CatalogCard
-              product={item}
-              quantity={getQuantity(item.id)}
-              language={language}
-              categories={categories}
-              onImagePress={() => onImagePress(item)}
-              onAdd={() => addToCart(item.id)}
-              onRemove={() => removeFromCart(item.id)}
-              isFavorite={isFavorite(item.id)}
-              onToggleFavorite={() => toggleFavorite(item.id)}
-              href={`/product/${item.id}`}
-            />
-          ) : null}
-        </View>
-      ))}
-    </View>
-  );
-}
-
 type SortOption = 'date' | 'price_asc' | 'price_desc';
 
 const SORT_KEYS: Record<SortOption, string> = {
@@ -196,13 +138,6 @@ export default function FavoritesScreen() {
     }
     return data;
   }, [filteredFavorites, numColumns]);
-
-  const recommendations = useMemo(
-    () => products
-      .filter((p) => p.status === 'published' && p.price !== null && !favoriteIds.includes(p.id))
-      .slice(0, isDesktop ? 5 : 6),
-    [products, favoriteIds, isDesktop],
-  );
 
   const handleImagePress = useCallback(
     (product: Product) => {
@@ -378,30 +313,11 @@ export default function FavoritesScreen() {
         )}
         <View style={[styles.scrollContentInner, isDesktop && styles.scrollContentInnerDesktop]}>
         {!hasFavorites ? (
-          <>
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptySubtext}>
-                {t('emptyFavSubtext')}
-              </Text>
-            </View>
-            {recommendations.length > 0 && (
-              <View style={styles.recsSection}>
-                <Text style={styles.recsTitle}>{t('recommendedForYou')}</Text>
-                <RecommendationsGrid
-                  products={recommendations}
-                  language={language}
-                  categories={categories}
-                  getQuantity={getQuantity}
-                  addToCart={addToCart}
-                  removeFromCart={removeFromCart}
-                  isFavorite={isFavorite}
-                  toggleFavorite={toggleFavorite}
-                  onImagePress={handleImagePress}
-                  isDesktop={isDesktop}
-                />
-              </View>
-            )}
-          </>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptySubtext}>
+              {t('emptyFavSubtext')}
+            </Text>
+          </View>
         ) : (
           <>
             <View style={styles.favGrid}>
@@ -435,24 +351,6 @@ export default function FavoritesScreen() {
             {filteredFavorites.length === 0 && (
               <View style={styles.noResultsWrap}>
                 <Text style={styles.noResultsText}>{t('nothingFound')}</Text>
-              </View>
-            )}
-
-            {recommendations.length > 0 && (
-              <View style={styles.recsSection}>
-                <Text style={styles.recsTitle}>{t('recommendedForYou')}</Text>
-                <RecommendationsGrid
-                  products={recommendations}
-                  language={language}
-                  categories={categories}
-                  getQuantity={getQuantity}
-                  addToCart={addToCart}
-                  removeFromCart={removeFromCart}
-                  isFavorite={isFavorite}
-                  toggleFavorite={toggleFavorite}
-                  onImagePress={handleImagePress}
-                  isDesktop={isDesktop}
-                />
               </View>
             )}
           </>
@@ -539,25 +437,6 @@ export default function FavoritesScreen() {
     </View>
   );
 }
-
-const recsStyles = StyleSheet.create({
-  recsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  recsGridDesktop: {
-    flexWrap: 'nowrap',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  cardWrapper: {
-    padding: 2,
-  },
-  cardWrapperDesktop: {
-    padding: 0,
-    flex: 1,
-  },
-});
 
 const LUXURY_FONT = Platform.select({
   web: 'Futura, "Futura-Medium", sans-serif',
@@ -1187,21 +1066,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: 3,
     textTransform: 'uppercase' as const,
-  },
-  recsSection: {
-    paddingTop: 48,
-    paddingHorizontal: 4,
-    marginTop: 0,
-    paddingBottom: 60,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F2',
-  },
-  recsTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
-    color: '#1A1A1A',
-    marginBottom: 24,
-    paddingHorizontal: 8,
-    letterSpacing: -0.3,
   },
 });
