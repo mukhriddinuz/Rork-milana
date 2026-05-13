@@ -140,25 +140,29 @@ function CatalogCard({
         <View />
       )}
       <View style={styles.cardHeaderActions}>
-        {showCartIcon && (
-          <Pressable
-            onPress={(e) => {
-              (e as any).stopPropagation?.();
-              (e as any).preventDefault?.();
-              handleAdd();
-            }}
-            style={styles.favButton}
-            hitSlop={8}
-            testID={`catalog-card-bag-header-${product.id}`}
-          >
-            <ShoppingBag
-              size={20}
-              color="#000000"
-              strokeWidth={1.5}
-              fill={inCart ? '#E5E5E5' : 'transparent'}
-            />
-          </Pressable>
-        )}
+        <Pressable
+          onPress={(e) => {
+            (e as any).stopPropagation?.();
+            (e as any).preventDefault?.();
+            handleAdd();
+          }}
+          style={[
+            styles.favButton,
+            {
+              opacity: isWeb && isHovered ? 1 : 0,
+              ...(Platform.OS === 'web' ? ({ transition: 'opacity 0.2s ease' } as any) : {}),
+            },
+          ]}
+          hitSlop={8}
+          testID={`catalog-card-bag-header-${product.id}`}
+        >
+          <ShoppingBag
+            size={20}
+            color="#000000"
+            strokeWidth={1.5}
+            fill={inCart ? '#E5E5E5' : 'transparent'}
+          />
+        </Pressable>
         {showHeart && (
           <Pressable
             onPress={(e) => {
