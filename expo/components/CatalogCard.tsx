@@ -176,8 +176,8 @@ function CatalogCard({
           >
             <Heart
               size={20}
-              color={isFavorite ? '#000000' : '#757575'}
-              fill={isFavorite ? '#000000' : 'transparent'}
+              color={isFavorite ? '#999999' : '#000000'}
+              fill={isFavorite ? '#999999' : 'transparent'}
               strokeWidth={1.5}
             />
           </Pressable>
