@@ -156,11 +156,11 @@ function CatalogCard({
           hitSlop={8}
           testID={`catalog-card-bag-header-${product.id}`}
         >
-          <ShoppingBag
+          <ToteIcon
             size={20}
-            color="#000000"
-            strokeWidth={1.5}
-            fill={inCart ? '#E5E5E5' : 'transparent'}
+            color={inCart ? '#999999' : '#000000'}
+            strokeWidth={1.2}
+            fill={inCart ? '#999999' : 'none'}
           />
         </Pressable>
         {showHeart && (
