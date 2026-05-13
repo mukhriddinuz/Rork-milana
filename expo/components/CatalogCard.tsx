@@ -124,19 +124,6 @@ function CatalogCard({
           accessibilityRole="image"
         />
       )}
-      {!isMens && showCartIcon && (
-        <Pressable
-          onPress={(e) => {
-            (e as any).stopPropagation?.();
-            (e as any).preventDefault?.();
-            handleAdd();
-          }}
-          style={styles.cartOverlayAbs}
-          testID={`catalog-card-bag-hover-${product.id}`}
-        >
-          <ShoppingBag size={18} color="#000000" strokeWidth={1.5} fill={inCart ? '#E5E5E5' : 'transparent'} />
-        </Pressable>
-      )}
     </>
   );
 
@@ -152,25 +139,46 @@ function CatalogCard({
       ) : (
         <View />
       )}
-      {showHeart && (
-        <Pressable
-          onPress={(e) => {
-            (e as any).stopPropagation?.();
-            (e as any).preventDefault?.();
-            handleFavorite();
-          }}
-          style={styles.favButton}
-          hitSlop={8}
-          testID={`catalog-card-heart-${product.id}`}
-        >
-          <Heart
-            size={20}
-            color={isFavorite ? '#000000' : '#757575'}
-            fill={isFavorite ? '#000000' : 'transparent'}
-            strokeWidth={1.5}
-          />
-        </Pressable>
-      )}
+      <View style={styles.cardHeaderActions}>
+        {showCartIcon && (
+          <Pressable
+            onPress={(e) => {
+              (e as any).stopPropagation?.();
+              (e as any).preventDefault?.();
+              handleAdd();
+            }}
+            style={styles.favButton}
+            hitSlop={8}
+            testID={`catalog-card-bag-header-${product.id}`}
+          >
+            <ShoppingBag
+              size={20}
+              color="#000000"
+              strokeWidth={1.5}
+              fill={inCart ? '#E5E5E5' : 'transparent'}
+            />
+          </Pressable>
+        )}
+        {showHeart && (
+          <Pressable
+            onPress={(e) => {
+              (e as any).stopPropagation?.();
+              (e as any).preventDefault?.();
+              handleFavorite();
+            }}
+            style={styles.favButton}
+            hitSlop={8}
+            testID={`catalog-card-heart-${product.id}`}
+          >
+            <Heart
+              size={20}
+              color={isFavorite ? '#000000' : '#757575'}
+              fill={isFavorite ? '#000000' : 'transparent'}
+              strokeWidth={1.5}
+            />
+          </Pressable>
+        )}
+      </View>
     </View>
   ) : null;
 
@@ -340,6 +348,11 @@ const styles = StyleSheet.create({
     height: 32,
     paddingHorizontal: 0,
     marginBottom: 4,
+  },
+  cardHeaderActions: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
   },
   favButton: {
     padding: 4,
