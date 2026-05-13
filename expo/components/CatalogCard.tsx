@@ -127,7 +127,7 @@ function CatalogCard({
     </>
   );
 
-  const newBadgeLabel = language === 'uz' ? 'YANGI' : language === 'ru' ? 'НОВИНКА' : (t('newArrival') ?? 'NEW ARRIVAL');
+  const newBadgeLabel = language === 'uz' ? 'YANGI KELGAN' : language === 'ru' ? 'НОВИНКА' : (t('newArrival') ?? 'NEW ARRIVAL');
 
   const cardHeader = !isMens ? (
     <View style={styles.cardHeader}>
