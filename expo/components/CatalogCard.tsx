@@ -124,6 +124,19 @@ function CatalogCard({
           accessibilityRole="image"
         />
       )}
+      {!isMens && showCartIcon && (
+        <Pressable
+          onPress={(e) => {
+            (e as any).stopPropagation?.();
+            (e as any).preventDefault?.();
+            handleAdd();
+          }}
+          style={styles.cartOverlayAbs}
+          testID={`catalog-card-bag-hover-${product.id}`}
+        >
+          <ShoppingBag size={18} color="#000000" strokeWidth={1.5} fill={inCart ? '#E5E5E5' : 'transparent'} />
+        </Pressable>
+      )}
     </>
   );
 
