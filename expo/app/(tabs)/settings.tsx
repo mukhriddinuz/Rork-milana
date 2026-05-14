@@ -384,7 +384,7 @@ export default function SettingsScreen() {
   const { width } = useWindowDimensions();
   const { user, language, changeLanguage, logout, t, updatePassword } = useAuth();
   const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
-  const { getClientById, updateClientProfile, changeClientPassword } = useClients();
+  const { getClientById, updateClientProfile } = useClients();
   const { products } = useProducts();
   const { addToCart, removeFromCart, getQuantity } = useCart();
   const { isFavorite, toggleFavorite, totalFavorites } = useFavorites();
@@ -408,13 +408,7 @@ export default function SettingsScreen() {
   const [editLastName, setEditLastName] = useState('');
   const [editLocation, setEditLocation] = useState('');
 
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [showOldPw, setShowOldPw] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [pwError, setPwError] = useState('');
+  const [showChangePwModal, setShowChangePwModal] = useState<boolean>(false);
 
   const renderWebHeader = () => (
     <>
@@ -549,36 +543,6 @@ export default function SettingsScreen() {
     console.log('[Settings] Profile updated for client:', user.id);
   };
 
-  const handleChangePassword = () => {
-    setPwError('');
-    if (!user) return;
-    if (!oldPassword.trim() || !newPassword.trim()) {
-      setPwError(t('fillAllFields'));
-      return;
-    }
-    if (newPassword.length < 4) {
-      setPwError(t('passwordTooShort'));
-      return;
-    }
-    if (newPassword !== confirmNewPassword) {
-      setPwError(t('passwordMismatch'));
-      return;
-    }
-    const success = changeClientPassword(user.id, oldPassword, newPassword);
-    if (success) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowChangePassword(false);
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setPwError('');
-      Alert.alert('✓', t('passwordChanged'));
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setPwError(t('wrongOldPassword'));
-    }
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
       {renderWebHeader()}
@@ -695,55 +659,24 @@ export default function SettingsScreen() {
               <Lock size={12} color={Colors.textTertiary} />
               <Text style={styles.sectionTitle}>{t('changePassword')}</Text>
             </View>
-            {!showChangePassword && (
-              <Pressable
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowChangePassword(true); setPwError(''); }}
-                style={styles.addCatBtn}
-                testID="change-password-btn"
-              >
-                <Lock size={12} color={Colors.primary} />
-                <Text style={styles.addCatText}>{t('changePassword')}</Text>
-              </Pressable>
-            )}
           </View>
-
-          {showChangePassword && (
-            <View style={styles.catForm}>
-              <View style={styles.profileField}>
-                <Text style={styles.profileFieldLabel}>{t('oldPassword')}</Text>
-                <View style={styles.pwRow}>
-                  <TextInput style={styles.pwInput} value={oldPassword} onChangeText={(text) => { setOldPassword(text); setPwError(''); }} placeholder={t('oldPassword')} placeholderTextColor={Colors.textTertiary} secureTextEntry={!showOldPw} autoCapitalize="none" testID="old-password-input" />
-                  <Pressable onPress={() => setShowOldPw(!showOldPw)} style={styles.pwEyeBtn}>
-                    {showOldPw ? <EyeOff size={16} color={Colors.textSecondary} /> : <Eye size={16} color={Colors.textSecondary} />}
-                  </Pressable>
-                </View>
-              </View>
-              <View style={styles.profileField}>
-                <Text style={styles.profileFieldLabel}>{t('newPassword')}</Text>
-                <View style={styles.pwRow}>
-                  <TextInput style={styles.pwInput} value={newPassword} onChangeText={(text) => { setNewPassword(text); setPwError(''); }} placeholder={t('newPassword')} placeholderTextColor={Colors.textTertiary} secureTextEntry={!showNewPw} autoCapitalize="none" testID="new-password-input" />
-                  <Pressable onPress={() => setShowNewPw(!showNewPw)} style={styles.pwEyeBtn}>
-                    {showNewPw ? <EyeOff size={16} color={Colors.textSecondary} /> : <Eye size={16} color={Colors.textSecondary} />}
-                  </Pressable>
-                </View>
-              </View>
-              <View style={styles.profileField}>
-                <Text style={styles.profileFieldLabel}>{t('confirmNewPassword')}</Text>
-                <TextInput style={styles.catInput} value={confirmNewPassword} onChangeText={(text) => { setConfirmNewPassword(text); setPwError(''); }} placeholder={t('confirmNewPassword')} placeholderTextColor={Colors.textTertiary} secureTextEntry autoCapitalize="none" testID="confirm-new-password-input" />
-              </View>
-              {pwError ? <Text style={styles.pwError}>{pwError}</Text> : null}
-              <View style={styles.catFormActions}>
-                <Pressable onPress={() => { setShowChangePassword(false); setOldPassword(''); setNewPassword(''); setConfirmNewPassword(''); setPwError(''); }} style={styles.catFormBtn}>
-                  <X size={14} color={Colors.textSecondary} />
-                  <Text style={styles.catCancelText}>{t('cancel')}</Text>
-                </Pressable>
-                <Pressable onPress={handleChangePassword} style={[styles.catFormBtn, styles.catSaveBtn]}>
-                  <Check size={14} color={Colors.white} />
-                  <Text style={styles.catSaveText}>{t('save')}</Text>
-                </Pressable>
-              </View>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              setShowChangePwModal(true);
+            }}
+            style={styles.changePwRow}
+            testID="change-password-btn"
+          >
+            <View style={styles.changePwIconWrap}>
+              <Lock size={16} color={Colors.primary} />
             </View>
-          )}
+            <View style={styles.changePwTextWrap}>
+              <Text style={styles.changePwLabel}>{t('changePassword')}</Text>
+              <Text style={styles.changePwSub}>{t('enterNewPassword')}</Text>
+            </View>
+            <ChevronRight size={16} color={Colors.textTertiary} />
+          </Pressable>
         </View>
       )}
 
@@ -808,6 +741,12 @@ export default function SettingsScreen() {
       </View>
       <GlobalFooter />
     </ScrollView>
+    <ChangePasswordModal
+      visible={showChangePwModal}
+      onClose={() => setShowChangePwModal(false)}
+      t={t}
+      updatePassword={updatePassword}
+    />
     </View>
   );
 }
@@ -1109,4 +1048,9 @@ const styles = StyleSheet.create({
   pwInput: { flex: 1, height: 40, paddingHorizontal: 12, fontSize: 13, color: Colors.text },
   pwEyeBtn: { paddingHorizontal: 12, height: 40, alignItems: 'center', justifyContent: 'center' },
   pwError: { fontSize: 12, color: Colors.danger, fontWeight: '500' as const },
+  changePwRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FAFAFA', padding: 14, gap: 12 },
+  changePwIconWrap: { width: 36, height: 36, borderRadius: 8, backgroundColor: Colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  changePwTextWrap: { flex: 1, gap: 2 },
+  changePwLabel: { fontSize: 14, fontWeight: '600' as const, color: Colors.text, letterSpacing: 0.3 },
+  changePwSub: { fontSize: 12, color: Colors.textSecondary },
 });
