@@ -28,7 +28,7 @@ const staffConfig = [
 export default function AdminLoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { language, login, signIn, changeLanguage, t } = useAuth();
+  const { language, login, signIn, resetPasswordForEmail, changeLanguage, t } = useAuth();
 
   const [mode, setMode] = useState<LoginMode>('select');
   const [email, setEmail] = useState<string>('');
@@ -36,6 +36,40 @@ export default function AdminLoginScreen() {
   const [loginError, setLoginError] = useState<boolean>(false);
   const [authErrorMsg, setAuthErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [resetSuccessMsg, setResetSuccessMsg] = useState<string | null>(null);
+
+  const handleForgotPassword = useCallback(async () => {
+    setResetSuccessMsg(null);
+    setAuthErrorMsg(null);
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setLoginError(true);
+      setAuthErrorMsg(t('enterEmailFirst'));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    try {
+      setIsResetting(true);
+      Haptics.selectionAsync();
+      const { error } = await resetPasswordForEmail(trimmed);
+      if (error) {
+        setLoginError(true);
+        setAuthErrorMsg(error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      setLoginError(false);
+      setResetSuccessMsg(t('resetLinkSent'));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : t('authGenericError');
+      setLoginError(true);
+      setAuthErrorMsg(message);
+    } finally {
+      setIsResetting(false);
+    }
+  }, [email, resetPasswordForEmail, t]);
 
   const handleStaffLogin = useCallback(
     async (role: UserRole) => {
@@ -178,7 +212,7 @@ export default function AdminLoginScreen() {
                 <TextInput
                   style={[styles.input, loginError && styles.inputError]}
                   value={email}
-                  onChangeText={(text) => { setEmail(text); setLoginError(false); setAuthErrorMsg(null); }}
+                  onChangeText={(text) => { setEmail(text); setLoginError(false); setAuthErrorMsg(null); setResetSuccessMsg(null); }}
                   placeholder={t('emailPlaceholder')}
                   placeholderTextColor={Colors.textTertiary}
                   autoCapitalize="none"
@@ -192,14 +226,30 @@ export default function AdminLoginScreen() {
                 <TextInput
                   style={[styles.input, loginError && styles.inputError]}
                   value={password}
-                  onChangeText={(text) => { setPassword(text); setLoginError(false); setAuthErrorMsg(null); }}
+                  onChangeText={(text) => { setPassword(text); setLoginError(false); setAuthErrorMsg(null); setResetSuccessMsg(null); }}
                   placeholder={t('password')}
                   placeholderTextColor={Colors.textTertiary}
                   secureTextEntry
                   autoCapitalize="none"
                   testID="admin-password-input"
                 />
+                <Pressable
+                  onPress={handleForgotPassword}
+                  disabled={isResetting}
+                  style={styles.forgotPasswordBtn}
+                  hitSlop={8}
+                  testID="admin-forgot-password"
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    {isResetting ? t('sendingResetLink') : t('forgotPassword')}
+                  </Text>
+                </Pressable>
               </View>
+              {resetSuccessMsg && (
+                <Text style={styles.successText} testID="admin-reset-success">
+                  {resetSuccessMsg}
+                </Text>
+              )}
               {loginError && (
                 <Text style={styles.errorText} testID="admin-login-error">
                   {authErrorMsg ?? t('invalidCredentials')}
@@ -280,6 +330,9 @@ const styles = StyleSheet.create({
   input: { height: 46, borderWidth: 1, borderColor: Colors.border, borderRadius: 8, paddingHorizontal: 14, fontSize: 14, color: Colors.text, backgroundColor: Colors.background },
   inputError: { borderColor: Colors.danger },
   errorText: { fontSize: 12, color: Colors.danger, fontWeight: '500' as const },
+  successText: { fontSize: 12, color: '#1F7A4D', fontWeight: '500' as const },
+  forgotPasswordBtn: { alignSelf: 'flex-end', paddingVertical: 4, marginTop: 2, ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as object) : {}) },
+  forgotPasswordText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' as const, letterSpacing: 0.3, ...(Platform.OS === 'web' ? ({ textDecorationLine: 'underline' as const } as object) : {}) },
   loginBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 10, backgroundColor: Colors.primary, marginTop: 4 },
   loginBtnPressed: { backgroundColor: Colors.primaryDark },
   loginBtnDisabled: { opacity: 0.6 },

@@ -169,6 +169,19 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     [],
   );
 
+  /** Send a password reset email via Supabase. */
+  const resetPasswordForEmail = useCallback(
+    async (email: string): Promise<{ error: string | null }> => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        console.log('[Auth] resetPasswordForEmail error:', error.message);
+        return { error: error.message };
+      }
+      return { error: null };
+    },
+    [],
+  );
+
   /** Real Supabase sign out (also clears the legacy local user). */
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
@@ -229,6 +242,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signUp,
     signIn,
     signOut,
+    resetPasswordForEmail,
     // Legacy/demo helpers (kept so existing screens keep working)
     login,
     loginAsClient,
