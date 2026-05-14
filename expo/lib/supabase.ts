@@ -1,5 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl =
@@ -13,6 +14,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // On web we must detect the recovery hash (#access_token=...&type=recovery)
+    // so the user lands on /update-password with a valid recovery session.
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });

@@ -71,6 +71,7 @@ function RootLayoutNav() {
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="showroom-admin" options={{ headerShown: false }} />
       <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="update-password" options={{ headerShown: false }} />
       <Stack.Screen name="rules" options={{ headerShown: false }} />
       <Stack.Screen name="add-product" options={{ headerShown: false }} />
       <Stack.Screen name="card-lab" options={{ headerShown: false }} />

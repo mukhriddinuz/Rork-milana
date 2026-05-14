@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
+import { Platform } from 'react-native';
+import * as Linking from 'expo-linking';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { User, Language, UserRole } from '@/types';
 import { translations } from '@/constants/translations';
@@ -169,12 +171,39 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     [],
   );
 
-  /** Send a password reset email via Supabase. */
+  /** Send a password reset email via Supabase. Includes redirectTo deep link
+   *  pointing at the /update-password screen so the recovery flow can complete. */
   const resetPasswordForEmail = useCallback(
     async (email: string): Promise<{ error: string | null }> => {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      let redirectTo: string | undefined;
+      try {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          redirectTo = `${window.location.origin}/update-password`;
+        } else {
+          redirectTo = Linking.createURL('update-password');
+        }
+      } catch (e) {
+        console.log('[Auth] redirectTo build failed:', e);
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo ? { redirectTo } : undefined,
+      );
       if (error) {
         console.log('[Auth] resetPasswordForEmail error:', error.message);
+        return { error: error.message };
+      }
+      return { error: null };
+    },
+    [],
+  );
+
+  /** Update the password of the currently authenticated (recovery) user. */
+  const updatePassword = useCallback(
+    async (newPassword: string): Promise<{ error: string | null }> => {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        console.log('[Auth] updatePassword error:', error.message);
         return { error: error.message };
       }
       return { error: null };
@@ -243,6 +272,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signIn,
     signOut,
     resetPasswordForEmail,
+    updatePassword,
     // Legacy/demo helpers (kept so existing screens keep working)
     login,
     loginAsClient,
