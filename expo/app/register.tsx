@@ -6,96 +6,95 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, UserPlus, Copy, Shield, Eye, EyeOff } from 'lucide-react-native';
+import { ArrowLeft, UserPlus, Eye, EyeOff } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import * as Clipboard from 'expo-clipboard';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/contexts/ClientsContext';
-import { ClientProfile } from '@/types';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, loginAsClient } = useAuth();
+  const { t, signUp } = useAuth();
   const { registerClient } = useClients();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [location, setLocation] = useState('');
-  const [phone, setPhone] = useState('');
-  const [customPassword, setCustomPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [messengerLink, setMessengerLink] = useState('');
-  const [createdClient, setCreatedClient] = useState<ClientProfile | null>(null);
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
+  const [location, setLocation] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [customPassword, setCustomPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirm, setShowConfirm] = useState<boolean>(false);
+  const [messengerLink, setMessengerLink] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleRegister = useCallback(() => {
-    if (!firstName.trim() || !lastName.trim() || !location.trim() || !phone.trim() || !customPassword.trim()) {
-      Alert.alert(t('fillAllFields')); return;
+  const handleRegister = useCallback(async () => {
+    setAuthError(null);
+    if (!firstName.trim() || !lastName.trim() || !location.trim() || !phone.trim() || !email.trim() || !customPassword.trim()) {
+      setAuthError(t('fillAllFields'));
+      return;
     }
-    if (customPassword.length < 4) { Alert.alert(t('passwordTooShort')); return; }
-    if (customPassword !== confirmPassword) { Alert.alert(t('passwordMismatch')); return; }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const client = registerClient({
-      firstName: firstName.trim(), lastName: lastName.trim(), location: location.trim(),
-      phone: phone.trim(), password: customPassword, messengerLink: messengerLink.trim() || undefined,
-    });
-    setCreatedClient(client);
-    console.log('[Register] Client registered:', client.username);
-  }, [firstName, lastName, location, phone, customPassword, confirmPassword, messengerLink, registerClient, t]);
+    if (customPassword.length < 6) {
+      setAuthError(t('passwordTooShort'));
+      return;
+    }
+    if (customPassword !== confirmPassword) {
+      setAuthError(t('passwordMismatch'));
+      return;
+    }
 
-  const handleCopyCredentials = useCallback(async () => {
-    if (!createdClient) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const text = `Login: ${createdClient.username}\nPassword: ${createdClient.password}`;
-    await Clipboard.setStringAsync(text);
-    Alert.alert('✓', t('credentialsCopied'));
-  }, [createdClient, t]);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const usernameValue = phone.trim();
 
-  const handleContinue = useCallback(async () => {
-    if (!createdClient) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await loginAsClient(createdClient.id, `${createdClient.firstName} ${createdClient.lastName}`, createdClient.username);
-    router.replace('/(tabs)/catalog' as any);
-  }, [createdClient, loginAsClient, router]);
+    try {
+      setIsSubmitting(true);
+      const { user: createdUser, error } = await signUp(email.trim(), customPassword, {
+        name: fullName,
+        username: usernameValue,
+        role: 'client',
+      });
 
-  if (createdClient) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
-        <View style={styles.successContainer}>
-          <View style={styles.successIcon}><Shield size={32} color={Colors.primary} /></View>
-          <Text style={styles.successTitle}>{t('registrationSuccess')}</Text>
-          <Text style={styles.successSubtitle}>{t('yourCredentials')}</Text>
-          <View style={styles.credentialsCard}>
-            <View style={styles.credRow}>
-              <Text style={styles.credLabel}>{t('yourUsername')}</Text>
-              <Text style={styles.credValue}>{createdClient.username}</Text>
-            </View>
-            <View style={styles.credDivider} />
-            <View style={styles.credRow}>
-              <Text style={styles.credLabel}>{t('yourPassword')}</Text>
-              <Text style={styles.credValue}>{createdClient.password}</Text>
-            </View>
-          </View>
-          <Pressable onPress={handleCopyCredentials} style={styles.copyBtn} testID="copy-credentials">
-            <Copy size={14} color={Colors.primary} /><Text style={styles.copyBtnText}>{t('copyCredentials')}</Text>
-          </Pressable>
-          <Text style={styles.saveWarning}>{t('saveCredentials')}</Text>
-          <Pressable onPress={handleContinue} style={styles.continueBtn} testID="continue-btn">
-            <Text style={styles.continueBtnText}>{t('continueBtn')}</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
+      if (error || !createdUser) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setAuthError(error ?? t('authGenericError'));
+        return;
+      }
+
+      // Mirror into local clients store so legacy screens keep working.
+      try {
+        registerClient({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          location: location.trim(),
+          phone: phone.trim(),
+          password: customPassword,
+          messengerLink: messengerLink.trim() || undefined,
+        });
+      } catch (e) {
+        console.log('[Register] Local mirror failed:', e);
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      console.log('[Register] Supabase user created:', createdUser.id);
+      router.replace('/(tabs)/catalog' as any);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : t('authGenericError');
+      console.log('[Register] Unexpected error:', message);
+      setAuthError(message);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [firstName, lastName, location, phone, email, customPassword, confirmPassword, messengerLink, signUp, registerClient, router, t]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -133,6 +132,20 @@ export default function RegisterScreen() {
             <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="+998 90 123 45 67" placeholderTextColor={Colors.textTertiary} keyboardType="phone-pad" testID="phone-input" />
           </View>
           <View style={styles.field}>
+            <Text style={styles.label}>{t('email')} *</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('emailPlaceholder')}
+              placeholderTextColor={Colors.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              testID="email-input"
+            />
+          </View>
+          <View style={styles.field}>
             <Text style={styles.label}>{t('createPassword')} *</Text>
             <View style={styles.passwordRow}>
               <TextInput style={styles.passwordInput} value={customPassword} onChangeText={setCustomPassword} placeholder={t('createPassword')} placeholderTextColor={Colors.textTertiary} secureTextEntry={!showPassword} autoCapitalize="none" testID="password-input" />
@@ -157,8 +170,30 @@ export default function RegisterScreen() {
             <Text style={styles.label}>{t('messengerLinkOptional')}</Text>
             <TextInput style={styles.input} value={messengerLink} onChangeText={setMessengerLink} placeholder="https://t.me/username" placeholderTextColor={Colors.textTertiary} autoCapitalize="none" testID="messenger-input" />
           </View>
-          <Pressable onPress={handleRegister} style={({ pressed }) => [styles.registerBtn, pressed && styles.registerBtnPressed]} testID="register-btn">
-            <UserPlus size={16} color={Colors.white} /><Text style={styles.registerBtnText}>{t('registerBtn')}</Text>
+          {authError ? (
+            <Text style={styles.authErrorText} testID="register-error">{authError}</Text>
+          ) : null}
+          <Pressable
+            onPress={handleRegister}
+            disabled={isSubmitting}
+            style={({ pressed }) => [
+              styles.registerBtn,
+              pressed && !isSubmitting && styles.registerBtnPressed,
+              isSubmitting && styles.registerBtnDisabled,
+            ]}
+            testID="register-btn"
+          >
+            {isSubmitting ? (
+              <>
+                <ActivityIndicator size="small" color={Colors.white} />
+                <Text style={styles.registerBtnText}>{t('creatingAccount')}</Text>
+              </>
+            ) : (
+              <>
+                <UserPlus size={16} color={Colors.white} />
+                <Text style={styles.registerBtnText}>{t('registerBtn')}</Text>
+              </>
+            )}
           </Pressable>
         </View>
         <View style={styles.loginLink}>
@@ -192,7 +227,9 @@ const styles = StyleSheet.create({
   phoneHintText: { fontSize: 12, color: Colors.primary, fontWeight: '500' as const },
   registerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50, borderRadius: 10, backgroundColor: Colors.primary, marginTop: 6 },
   registerBtnPressed: { backgroundColor: Colors.primaryDark },
+  registerBtnDisabled: { opacity: 0.6 },
   registerBtnText: { fontSize: 15, fontWeight: '600' as const, color: Colors.white },
+  authErrorText: { fontSize: 13, color: Colors.danger, fontWeight: '500' as const, marginTop: 4, letterSpacing: 0.2 },
   loginLink: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
   loginLinkText: { fontSize: 13, color: Colors.textSecondary },
   loginLinkAction: { fontSize: 13, fontWeight: '600' as const, color: Colors.primary },

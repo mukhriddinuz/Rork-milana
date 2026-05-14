@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +16,6 @@ import { Package, Calculator, ShoppingBag, Globe, LogIn, ChevronRight, ArrowLeft
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClients } from '@/contexts/ClientsContext';
 import { UserRole } from '@/types';
 
 type LoginMode = 'select' | 'client';
@@ -28,13 +28,14 @@ const staffConfig = [
 export default function AdminLoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { language, login, loginAsClient, changeLanguage, t } = useAuth();
-  const { findClientByCredentials } = useClients();
+  const { language, login, signIn, changeLanguage, t } = useAuth();
 
   const [mode, setMode] = useState<LoginMode>('select');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<boolean>(false);
+  const [authErrorMsg, setAuthErrorMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleStaffLogin = useCallback(
     async (role: UserRole) => {
@@ -47,18 +48,34 @@ export default function AdminLoginScreen() {
   );
 
   const handleClientLogin = useCallback(async () => {
-    if (!username.trim() || !password.trim()) { setLoginError(true); return; }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const client = findClientByCredentials(username.trim(), password.trim());
-    if (client) {
-      setLoginError(false);
-      await loginAsClient(client.id, `${client.firstName} ${client.lastName}`, client.username);
-      router.replace('/(tabs)/catalog' as any);
-    } else {
+    setAuthErrorMsg(null);
+    if (!email.trim() || !password.trim()) {
       setLoginError(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAuthErrorMsg(t('fillAllFields'));
+      return;
     }
-  }, [username, password, findClientByCredentials, loginAsClient, router]);
+    try {
+      setIsSubmitting(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const { user, error } = await signIn(email.trim(), password);
+      if (error || !user) {
+        setLoginError(true);
+        setAuthErrorMsg(error ?? t('invalidCredentials'));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      setLoginError(false);
+      router.replace('/(tabs)/catalog' as any);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : t('authGenericError');
+      console.log('[Auth] Client login error:', message);
+      setLoginError(true);
+      setAuthErrorMsg(message);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [email, password, signIn, router, t]);
 
   const handleToggleLang = useCallback(() => {
     Haptics.selectionAsync();
@@ -149,7 +166,7 @@ export default function AdminLoginScreen() {
 
         {mode === 'client' && (
           <View style={styles.clientForm}>
-            <Pressable onPress={() => { setMode('select'); setLoginError(false); setUsername(''); setPassword(''); }} style={styles.backToSelect}>
+            <Pressable onPress={() => { setMode('select'); setLoginError(false); setAuthErrorMsg(null); setEmail(''); setPassword(''); }} style={styles.backToSelect}>
               <Text style={styles.backToSelectText}>← {t('back')}</Text>
             </Pressable>
 
@@ -157,16 +174,17 @@ export default function AdminLoginScreen() {
 
             <View style={styles.formCard}>
               <View style={styles.field}>
-                <Text style={styles.fieldLabel}>{t('firstName')}</Text>
+                <Text style={styles.fieldLabel}>{t('email')}</Text>
                 <TextInput
                   style={[styles.input, loginError && styles.inputError]}
-                  value={username}
-                  onChangeText={(text) => { setUsername(text); setLoginError(false); }}
-                  placeholder={t('firstName')}
+                  value={email}
+                  onChangeText={(text) => { setEmail(text); setLoginError(false); setAuthErrorMsg(null); }}
+                  placeholder={t('emailPlaceholder')}
                   placeholderTextColor={Colors.textTertiary}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  testID="admin-username-input"
+                  keyboardType="email-address"
+                  testID="admin-email-input"
                 />
               </View>
               <View style={styles.field}>
@@ -174,7 +192,7 @@ export default function AdminLoginScreen() {
                 <TextInput
                   style={[styles.input, loginError && styles.inputError]}
                   value={password}
-                  onChangeText={(text) => { setPassword(text); setLoginError(false); }}
+                  onChangeText={(text) => { setPassword(text); setLoginError(false); setAuthErrorMsg(null); }}
                   placeholder={t('password')}
                   placeholderTextColor={Colors.textTertiary}
                   secureTextEntry
@@ -182,14 +200,32 @@ export default function AdminLoginScreen() {
                   testID="admin-password-input"
                 />
               </View>
-              {loginError && <Text style={styles.errorText}>{t('loginError')}</Text>}
+              {loginError && (
+                <Text style={styles.errorText} testID="admin-login-error">
+                  {authErrorMsg ?? t('invalidCredentials')}
+                </Text>
+              )}
               <Pressable
                 onPress={handleClientLogin}
-                style={({ pressed }) => [styles.loginBtn, pressed && styles.loginBtnPressed]}
+                disabled={isSubmitting}
+                style={({ pressed }) => [
+                  styles.loginBtn,
+                  pressed && !isSubmitting && styles.loginBtnPressed,
+                  isSubmitting && styles.loginBtnDisabled,
+                ]}
                 testID="admin-client-login-btn"
               >
-                <LogIn size={16} color={Colors.white} />
-                <Text style={styles.loginBtnText}>{t('loginBtn')}</Text>
+                {isSubmitting ? (
+                  <>
+                    <ActivityIndicator size="small" color={Colors.white} />
+                    <Text style={styles.loginBtnText}>{t('signingIn')}</Text>
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={16} color={Colors.white} />
+                    <Text style={styles.loginBtnText}>{t('loginBtn')}</Text>
+                  </>
+                )}
               </Pressable>
             </View>
 
@@ -246,6 +282,7 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 12, color: Colors.danger, fontWeight: '500' as const },
   loginBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderRadius: 10, backgroundColor: Colors.primary, marginTop: 4 },
   loginBtnPressed: { backgroundColor: Colors.primaryDark },
+  loginBtnDisabled: { opacity: 0.6 },
   loginBtnText: { fontSize: 15, fontWeight: '600' as const, color: Colors.white },
   registerLink: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 },
   registerLinkText: { fontSize: 13, color: Colors.textSecondary },
