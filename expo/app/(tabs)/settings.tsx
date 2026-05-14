@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   StyleSheet,
   useWindowDimensions,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -92,6 +94,140 @@ function DashNavCard({ item }: { item: DashNavItem }) {
   );
 }
 
+function ChangePasswordModal({
+  visible,
+  onClose,
+  t,
+  updatePassword,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  t: (key: string) => string;
+  updatePassword: (pw: string) => Promise<{ error: string | null }>;
+}) {
+  const [newPw, setNewPw] = useState<string>('');
+  const [confirmPw, setConfirmPw] = useState<string>('');
+  const [showPw, setShowPw] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+
+  useEffect(() => {
+    if (!visible) {
+      setNewPw('');
+      setConfirmPw('');
+      setError('');
+      setSuccess('');
+      setShowPw(false);
+      setSubmitting(false);
+    }
+  }, [visible]);
+
+  const handleSave = useCallback(async () => {
+    setError('');
+    setSuccess('');
+    if (!newPw.trim() || !confirmPw.trim()) {
+      setError(t('fillAllFields'));
+      return;
+    }
+    if (newPw.length < 6) {
+      setError(t('passwordTooShort'));
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setError(t('passwordsDoNotMatch'));
+      return;
+    }
+    setSubmitting(true);
+    const { error: err } = await updatePassword(newPw);
+    setSubmitting(false);
+    if (err) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      setError(err);
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setSuccess(t('passwordUpdated'));
+    setNewPw('');
+    setConfirmPw('');
+    setTimeout(() => {
+      onClose();
+    }, 1400);
+  }, [newPw, confirmPw, t, updatePassword, onClose]);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={cpStyles.backdrop} onPress={submitting ? undefined : onClose}>
+        <Pressable style={cpStyles.sheet} onPress={(e) => e.stopPropagation()} testID="change-password-modal">
+          <View style={cpStyles.headerRow}>
+            <Text style={cpStyles.title}>{t('changePassword')}</Text>
+            <Pressable onPress={onClose} hitSlop={10} disabled={submitting}>
+              <X size={20} color="#1A1A1A" />
+            </Pressable>
+          </View>
+          <Text style={cpStyles.subtitle}>{t('enterNewPassword')}</Text>
+
+          <View style={cpStyles.field}>
+            <Text style={cpStyles.label}>{t('newPassword')}</Text>
+            <View style={cpStyles.inputRow}>
+              <TextInput
+                value={newPw}
+                onChangeText={(v) => { setNewPw(v); setError(''); setSuccess(''); }}
+                secureTextEntry={!showPw}
+                autoCapitalize="none"
+                placeholder={t('newPassword')}
+                placeholderTextColor="#BBBBBB"
+                style={cpStyles.input}
+                testID="new-password"
+              />
+              <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8} style={cpStyles.eyeBtn}>
+                {showPw ? <EyeOff size={16} color="#999999" /> : <Eye size={16} color="#999999" />}
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={cpStyles.field}>
+            <Text style={cpStyles.label}>{t('confirmPassword')}</Text>
+            <View style={cpStyles.inputRow}>
+              <TextInput
+                value={confirmPw}
+                onChangeText={(v) => { setConfirmPw(v); setError(''); setSuccess(''); }}
+                secureTextEntry={!showPw}
+                autoCapitalize="none"
+                placeholder={t('confirmPassword')}
+                placeholderTextColor="#BBBBBB"
+                style={cpStyles.input}
+                testID="confirm-new-password"
+              />
+            </View>
+          </View>
+
+          {error ? <Text style={cpStyles.error}>{error}</Text> : null}
+          {success ? <Text style={cpStyles.success}>{success}</Text> : null}
+
+          <Pressable
+            onPress={handleSave}
+            disabled={submitting || !!success}
+            style={[cpStyles.submitBtn, (submitting || !!success) && cpStyles.submitBtnDisabled]}
+            testID="save-new-password"
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={cpStyles.submitText}>{t('saveNewPassword')}</Text>
+            )}
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 function ProfileDashboard({
   router,
   user,
@@ -101,6 +237,7 @@ function ProfileDashboard({
   totalFavorites,
   orders,
   logout,
+  updatePassword,
 }: {
   router: any;
   user: any;
@@ -110,7 +247,9 @@ function ProfileDashboard({
   totalFavorites: number;
   orders: any[];
   logout: () => Promise<void>;
+  updatePassword: (pw: string) => Promise<{ error: string | null }>;
 }) {
+  const [showChangePw, setShowChangePw] = useState<boolean>(false);
   const clientOrders = useMemo(
     () => orders.filter((o: any) => o.clientId === user?.id),
     [orders, user?.id],
@@ -170,6 +309,15 @@ function ProfileDashboard({
       onPress: () => {},
     },
     {
+      icon: <Lock size={20} color="#1A1A1A" />,
+      label: t('changePassword'),
+      sublabel: t('enterNewPassword'),
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        setShowChangePw(true);
+      },
+    },
+    {
       icon: <Shield size={20} color="#1A1A1A" />,
       label: t('menuSecurity'),
       sublabel: t('descSecurity'),
@@ -183,6 +331,16 @@ function ProfileDashboard({
       danger: true,
     },
   ], [clientOrders.length, totalFavorites, router, handleLogout, t]);
+
+  // expose the modal under the dashboard
+  const modal = (
+    <ChangePasswordModal
+      visible={showChangePw}
+      onClose={() => setShowChangePw(false)}
+      t={t}
+      updatePassword={updatePassword}
+    />
+  );
 
   return (
     <ScrollView style={profileStyles.container} contentContainerStyle={{ flexGrow: 1 }}>
@@ -216,6 +374,7 @@ function ProfileDashboard({
 
       </View>
       <GlobalFooter />
+      {modal}
     </ScrollView>
   );
 }
@@ -223,7 +382,7 @@ function ProfileDashboard({
 export default function SettingsScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { user, language, changeLanguage, logout, t } = useAuth();
+  const { user, language, changeLanguage, logout, t, updatePassword } = useAuth();
   const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
   const { getClientById, updateClientProfile, changeClientPassword } = useClients();
   const { products } = useProducts();
@@ -286,6 +445,7 @@ export default function SettingsScreen() {
         totalFavorites={totalFavorites}
         orders={orders}
         logout={logout}
+        updatePassword={updatePassword}
       />
       </View>
     );
@@ -651,6 +811,105 @@ export default function SettingsScreen() {
     </View>
   );
 }
+
+const cpStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(20,20,20,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 28,
+    borderRadius: 2,
+    gap: 18,
+    ...(Platform.OS === 'web' ? {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.18,
+      shadowRadius: 28,
+    } : { elevation: 6 }),
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: '#1A1A1A',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#888888',
+    letterSpacing: 0.4,
+    marginTop: -10,
+  },
+  field: { gap: 6 },
+  label: {
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#888888',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    fontSize: 14,
+    color: '#1A1A1A',
+    paddingVertical: 8,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' as any } : {}),
+  },
+  eyeBtn: {
+    paddingHorizontal: 6,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  error: {
+    fontSize: 12,
+    color: '#C0392B',
+    letterSpacing: 0.3,
+  },
+  success: {
+    fontSize: 12,
+    color: '#2E7D5B',
+    letterSpacing: 0.3,
+  },
+  submitBtn: {
+    height: 48,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
+  },
+  submitText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+});
 
 const profileStyles = StyleSheet.create({
   container: {
