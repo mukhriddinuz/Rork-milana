@@ -1,29 +1,64 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { Product } from '@/types';
-import { mockProducts } from '@/mocks/data';
+import { supabase } from '@/lib/supabase';
+
+type ProductRow = {
+  id: string;
+  modelNumber: string;
+  variantNumber: string;
+  category: string;
+  image: string;
+  secondaryImage?: string | null;
+  price: number | null;
+  oldPrice?: number | null;
+  status: Product['status'];
+  isTrending: boolean | null;
+  isNew?: boolean | null;
+  visibility: Product['visibility'];
+  createdAt: string;
+  createdBy: string;
+  targetAudience?: Product['targetAudience'] | null;
+  description?: string | null;
+};
+
+const mapRowToProduct = (row: ProductRow): Product => ({
+  id: row.id,
+  modelNumber: row.modelNumber,
+  variantNumber: row.variantNumber,
+  category: row.category,
+  image: row.image,
+  secondaryImage: row.secondaryImage ?? undefined,
+  price: row.price,
+  oldPrice: row.oldPrice ?? null,
+  status: row.status,
+  isTrending: row.isTrending ?? false,
+  isNew: row.isNew ?? row.isTrending ?? false,
+  visibility: row.visibility ?? 'all',
+  createdAt: row.createdAt,
+  createdBy: row.createdBy,
+  targetAudience: row.targetAudience ?? undefined,
+  description: row.description ?? undefined,
+});
 
 export const [ProductsProvider, useProducts] = createContextHook(() => {
   const [products, setProducts] = useState<Product[]>([]);
   const initialized = useRef(false);
+  const queryClient = useQueryClient();
 
   const productsQuery = useQuery({
     queryKey: ['products'],
-    queryFn: async () => {
-      const stored = await AsyncStorage.getItem('milana_products');
-      if (stored) {
-        const parsed = JSON.parse(stored) as Product[];
-        return parsed.map((p) => ({
-          ...p,
-          isTrending: p.isTrending ?? false,
-          isNew: p.isNew ?? p.isTrending ?? false,
-          visibility: p.visibility ?? 'all',
-        }));
+    queryFn: async (): Promise<Product[]> => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('createdAt', { ascending: false });
+      if (error) {
+        console.error('[Products] Fetch failed:', error.message);
+        return [];
       }
-      await AsyncStorage.setItem('milana_products', JSON.stringify(mockProducts));
-      return mockProducts;
+      return (data ?? []).map((r) => mapRowToProduct(r as ProductRow));
     },
   });
 
@@ -34,47 +69,91 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
     }
   }, [productsQuery.data]);
 
-  const syncMutation = useMutation({
-    mutationFn: async (updated: Product[]) => {
-      await AsyncStorage.setItem('milana_products', JSON.stringify(updated));
-      return updated;
+  const addMutation = useMutation({
+    mutationFn: async (product: Omit<Product, 'id' | 'createdAt'>) => {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          modelNumber: product.modelNumber,
+          variantNumber: product.variantNumber,
+          category: product.category,
+          image: product.image,
+          price: product.price,
+          oldPrice: product.oldPrice ?? null,
+          status: product.status,
+          isTrending: product.isTrending,
+          visibility: product.visibility,
+          createdBy: product.createdBy,
+        })
+        .select('*')
+        .single();
+      if (error) throw error;
+      return mapRowToProduct(data as ProductRow);
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Product> }) => {
+      const { id: _omit, createdAt: _omit2, isNew: _omit3, secondaryImage: _omit4, targetAudience: _omit5, description: _omit6, ...rest } = updates as Partial<Product> & Record<string, unknown>;
+      const { error } = await supabase.from('products').update(rest).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   });
 
   const addProduct = useCallback(
     (product: Omit<Product, 'id' | 'createdAt'>) => {
-      const newProduct: Product = {
+      const optimistic: Product = {
         ...product,
-        id: Date.now().toString(),
+        id: `tmp_${Date.now()}`,
         createdAt: new Date().toISOString(),
       };
-      const updated = [newProduct, ...products];
-      setProducts(updated);
-      syncMutation.mutate(updated);
-      console.log('[Products] Added:', newProduct.modelNumber);
-      return newProduct;
+      setProducts((prev) => [optimistic, ...prev]);
+      addMutation.mutate(product, {
+        onSuccess: (saved) => {
+          setProducts((prev) => [saved, ...prev.filter((p) => p.id !== optimistic.id)]);
+        },
+        onError: (err) => {
+          console.error('[Products] Add failed:', err);
+          setProducts((prev) => prev.filter((p) => p.id !== optimistic.id));
+        },
+      });
+      console.log('[Products] Added:', optimistic.modelNumber);
+      return optimistic;
     },
-    [products, syncMutation],
+    [addMutation],
   );
 
   const updateProduct = useCallback(
     (id: string, updates: Partial<Product>) => {
-      const updated = products.map((p) => (p.id === id ? { ...p, ...updates } : p));
-      setProducts(updated);
-      syncMutation.mutate(updated);
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+      updateMutation.mutate(
+        { id, updates },
+        { onError: (err) => console.error('[Products] Update failed:', err) },
+      );
       console.log('[Products] Updated:', id, updates);
     },
-    [products, syncMutation],
+    [updateMutation],
   );
 
   const deleteProduct = useCallback(
     (id: string) => {
-      const updated = products.filter((p) => p.id !== id);
-      setProducts(updated);
-      syncMutation.mutate(updated);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      deleteMutation.mutate(id, {
+        onError: (err) => console.error('[Products] Delete failed:', err),
+      });
       console.log('[Products] Deleted:', id);
     },
-    [products, syncMutation],
+    [deleteMutation],
   );
 
   const getProductById = useCallback(

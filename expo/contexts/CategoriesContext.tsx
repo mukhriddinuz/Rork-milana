@@ -1,33 +1,26 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { Category } from '@/types';
-
-const defaultCategories: Category[] = [
-  { id: 'xalat', uz: 'Xalat', ru: 'Халат' },
-  { id: 'pijama', uz: 'Pijama', ru: 'Пижама' },
-  { id: 'koylak', uz: "Ko'ylak", ru: 'Рубашка' },
-  { id: 'futbolka', uz: 'Futbolka', ru: 'Футболка' },
-  { id: 'shim', uz: 'Shim', ru: 'Брюки' },
-  { id: 'ichki_kiyim', uz: 'Ichki kiyim', ru: 'Нижнее бельё' },
-  { id: 'sochiq', uz: 'Sochiq', ru: 'Полотенце' },
-  { id: 'choyshablar', uz: 'Choyshablar', ru: 'Постельное бельё' },
-];
+import { supabase } from '@/lib/supabase';
 
 export const [CategoriesProvider, useCategories] = createContextHook(() => {
   const [categories, setCategories] = useState<Category[]>([]);
   const initialized = useRef(false);
+  const queryClient = useQueryClient();
 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
-    queryFn: async () => {
-      const stored = await AsyncStorage.getItem('milana_categories');
-      if (stored) {
-        return JSON.parse(stored) as Category[];
+    queryFn: async (): Promise<Category[]> => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('id', { ascending: true });
+      if (error) {
+        console.error('[Categories] Fetch failed:', error.message);
+        return [];
       }
-      await AsyncStorage.setItem('milana_categories', JSON.stringify(defaultCategories));
-      return defaultCategories;
+      return (data ?? []) as Category[];
     },
   });
 
@@ -38,11 +31,29 @@ export const [CategoriesProvider, useCategories] = createContextHook(() => {
     }
   }, [categoriesQuery.data]);
 
-  const syncMutation = useMutation({
-    mutationFn: async (updated: Category[]) => {
-      await AsyncStorage.setItem('milana_categories', JSON.stringify(updated));
-      return updated;
+  const addMutation = useMutation({
+    mutationFn: async (category: Category) => {
+      const { error } = await supabase.from('categories').insert(category);
+      if (error) throw error;
+      return category;
     },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Omit<Category, 'id'>> }) => {
+      const { error } = await supabase.from('categories').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   });
 
   const addCategory = useCallback(
@@ -53,31 +64,38 @@ export const [CategoriesProvider, useCategories] = createContextHook(() => {
       };
       const updated = [...categories, newCategory];
       setCategories(updated);
-      syncMutation.mutate(updated);
+      addMutation.mutate(newCategory, {
+        onError: (err) => console.error('[Categories] Add failed:', err),
+      });
       console.log('[Categories] Added:', newCategory.id);
       return newCategory;
     },
-    [categories, syncMutation],
+    [categories, addMutation],
   );
 
   const updateCategory = useCallback(
     (id: string, updates: Partial<Omit<Category, 'id'>>) => {
       const updated = categories.map((c) => (c.id === id ? { ...c, ...updates } : c));
       setCategories(updated);
-      syncMutation.mutate(updated);
+      updateMutation.mutate(
+        { id, updates },
+        { onError: (err) => console.error('[Categories] Update failed:', err) },
+      );
       console.log('[Categories] Updated:', id);
     },
-    [categories, syncMutation],
+    [categories, updateMutation],
   );
 
   const deleteCategory = useCallback(
     (id: string) => {
       const updated = categories.filter((c) => c.id !== id);
       setCategories(updated);
-      syncMutation.mutate(updated);
+      deleteMutation.mutate(id, {
+        onError: (err) => console.error('[Categories] Delete failed:', err),
+      });
       console.log('[Categories] Deleted:', id);
     },
-    [categories, syncMutation],
+    [categories, deleteMutation],
   );
 
   return {
