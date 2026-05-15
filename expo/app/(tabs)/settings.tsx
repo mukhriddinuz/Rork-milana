@@ -56,6 +56,7 @@ import { useFavorites } from '@/contexts/FavoritesContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import GlobalFooter from '@/components/GlobalFooter';
 import { Language, Product } from '@/types';
+import { FontFamily } from '@/constants/typography';
 
 interface DashNavItem {
   icon: React.ReactNode;
@@ -225,6 +226,67 @@ function ChangePasswordModal({
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+function GuestGateway({ router, t }: { router: any; t: (key: string) => string }) {
+  const handlePress = useCallback((path: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    router.push(path as any);
+  }, [router]);
+
+  return (
+    <ScrollView
+      style={guestStyles.container}
+      contentContainerStyle={guestStyles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={guestStyles.inner}>
+        <View style={guestStyles.crest}>
+          <View style={guestStyles.crestLine} />
+          <Text style={guestStyles.crestText}>MILANA</Text>
+          <View style={guestStyles.crestLine} />
+        </View>
+
+        <View style={guestStyles.avatarWrap}>
+          <View style={guestStyles.avatarRing}>
+            <User size={36} color="#1A1A1A" strokeWidth={1.2} />
+          </View>
+        </View>
+
+        <Text style={guestStyles.title}>{t('myAccount')}</Text>
+        <Text style={guestStyles.subtitle}>{t('guestWelcomeSubtitle')}</Text>
+
+        <View style={guestStyles.divider} />
+
+        <View style={guestStyles.actions}>
+          <Pressable
+            onPress={() => handlePress('/admin')}
+            style={({ pressed }) => [guestStyles.primaryBtn, pressed && guestStyles.primaryBtnPressed]}
+            testID="guest-sign-in"
+          >
+            <Text style={guestStyles.primaryBtnText}>{t('signInAction')}</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => handlePress('/register')}
+            style={({ pressed }) => [guestStyles.secondaryBtn, pressed && guestStyles.secondaryBtnPressed]}
+            testID="guest-create-account"
+          >
+            <Text style={guestStyles.secondaryBtnText}>{t('createAccountAction')}</Text>
+          </Pressable>
+        </View>
+
+        <Pressable
+          onPress={() => handlePress('/(tabs)/catalog')}
+          style={guestStyles.browseLink}
+          hitSlop={10}
+          testID="guest-continue-browsing"
+        >
+          <Text style={guestStyles.browseLinkText}>{t('catalog')}</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -425,6 +487,15 @@ export default function SettingsScreen() {
       <MobileHeader />
     </>
   );
+
+  if (!user) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        {renderWebHeader()}
+        <GuestGateway router={router} t={t} />
+      </View>
+    );
+  }
 
   if (isClient && (isDesktop || isWebMobile)) {
     return (
@@ -750,6 +821,136 @@ export default function SettingsScreen() {
     </View>
   );
 }
+
+const guestStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  contentContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 28,
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  crest: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 48,
+  },
+  crestLine: {
+    width: 40,
+    height: 1,
+    backgroundColor: '#1A1A1A',
+  },
+  crestText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    letterSpacing: 4,
+    color: '#1A1A1A',
+    fontWeight: '500' as const,
+  },
+  avatarWrap: {
+    marginBottom: 28,
+  },
+  avatarRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FAFAFA',
+  },
+  title: {
+    fontFamily: FontFamily.medium,
+    fontSize: 26,
+    fontWeight: '500' as const,
+    color: '#1A1A1A',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#888888',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    paddingHorizontal: 12,
+    marginBottom: 36,
+  },
+  divider: {
+    width: 32,
+    height: 1,
+    backgroundColor: '#E5E5E5',
+    marginBottom: 36,
+  },
+  actions: {
+    width: '100%',
+    gap: 14,
+    marginBottom: 32,
+  },
+  primaryBtn: {
+    width: '100%',
+    height: 54,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryBtnPressed: {
+    backgroundColor: '#333333',
+  },
+  primaryBtnText: {
+    fontFamily: FontFamily.medium,
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+  },
+  secondaryBtn: {
+    width: '100%',
+    height: 54,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryBtnPressed: {
+    backgroundColor: '#F5F5F5',
+  },
+  secondaryBtnText: {
+    fontFamily: FontFamily.medium,
+    color: '#1A1A1A',
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+  },
+  browseLink: {
+    paddingVertical: 8,
+  },
+  browseLinkText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    color: '#999999',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    textDecorationLine: 'underline' as const,
+  },
+});
 
 const cpStyles = StyleSheet.create({
   backdrop: {
