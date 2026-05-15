@@ -6,41 +6,62 @@ import { supabase } from '@/lib/supabase';
 
 type ProductRow = {
   id: string;
-  modelNumber: string;
-  variantNumber: string;
+  model_number: string;
+  variant_number: string;
   category: string;
   image: string;
-  secondaryImage?: string | null;
+  secondary_image?: string | null;
   price: number | null;
-  oldPrice?: number | null;
+  old_price?: number | null;
   status: Product['status'];
-  isTrending: boolean | null;
-  isNew?: boolean | null;
+  is_trending: boolean | null;
+  is_new?: boolean | null;
   visibility: Product['visibility'];
-  createdAt: string;
-  createdBy: string;
-  targetAudience?: Product['targetAudience'] | null;
+  created_at: string;
+  created_by: string;
+  target_audience?: Product['targetAudience'] | null;
   description?: string | null;
 };
 
 const mapRowToProduct = (row: ProductRow): Product => ({
   id: row.id,
-  modelNumber: row.modelNumber,
-  variantNumber: row.variantNumber,
+  modelNumber: row.model_number,
+  variantNumber: row.variant_number,
   category: row.category,
   image: row.image,
-  secondaryImage: row.secondaryImage ?? undefined,
+  secondaryImage: row.secondary_image ?? undefined,
   price: row.price,
-  oldPrice: row.oldPrice ?? null,
+  oldPrice: row.old_price ?? null,
   status: row.status,
-  isTrending: row.isTrending ?? false,
-  isNew: row.isNew ?? row.isTrending ?? false,
+  isTrending: row.is_trending ?? false,
+  isNew: row.is_new ?? row.is_trending ?? false,
   visibility: row.visibility ?? 'all',
-  createdAt: row.createdAt,
-  createdBy: row.createdBy,
-  targetAudience: row.targetAudience ?? undefined,
+  createdAt: row.created_at,
+  createdBy: row.created_by,
+  targetAudience: row.target_audience ?? undefined,
   description: row.description ?? undefined,
 });
+
+const mapProductToRow = (
+  product: Partial<Product>,
+): Record<string, unknown> => {
+  const row: Record<string, unknown> = {};
+  if (product.modelNumber !== undefined) row.model_number = product.modelNumber;
+  if (product.variantNumber !== undefined) row.variant_number = product.variantNumber;
+  if (product.category !== undefined) row.category = product.category;
+  if (product.image !== undefined) row.image = product.image;
+  if (product.secondaryImage !== undefined) row.secondary_image = product.secondaryImage ?? null;
+  if (product.price !== undefined) row.price = product.price;
+  if (product.oldPrice !== undefined) row.old_price = product.oldPrice ?? null;
+  if (product.status !== undefined) row.status = product.status;
+  if (product.isTrending !== undefined) row.is_trending = product.isTrending;
+  if (product.isNew !== undefined) row.is_new = product.isNew;
+  if (product.visibility !== undefined) row.visibility = product.visibility;
+  if (product.createdBy !== undefined) row.created_by = product.createdBy;
+  if (product.targetAudience !== undefined) row.target_audience = product.targetAudience ?? null;
+  if (product.description !== undefined) row.description = product.description ?? null;
+  return row;
+};
 
 export const [ProductsProvider, useProducts] = createContextHook(() => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -53,7 +74,7 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('createdAt', { ascending: false });
+        .order('created_at', { ascending: false });
       if (error) {
         console.error('[Products] Fetch failed:', error.message);
         return [];
@@ -73,18 +94,7 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
     mutationFn: async (product: Omit<Product, 'id' | 'createdAt'>) => {
       const { data, error } = await supabase
         .from('products')
-        .insert({
-          modelNumber: product.modelNumber,
-          variantNumber: product.variantNumber,
-          category: product.category,
-          image: product.image,
-          price: product.price,
-          oldPrice: product.oldPrice ?? null,
-          status: product.status,
-          isTrending: product.isTrending,
-          visibility: product.visibility,
-          createdBy: product.createdBy,
-        })
+        .insert(mapProductToRow(product))
         .select('*')
         .single();
       if (error) throw error;
@@ -95,8 +105,8 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Product> }) => {
-      const { id: _omit, createdAt: _omit2, isNew: _omit3, secondaryImage: _omit4, targetAudience: _omit5, description: _omit6, ...rest } = updates as Partial<Product> & Record<string, unknown>;
-      const { error } = await supabase.from('products').update(rest).eq('id', id);
+      const { id: _omit, createdAt: _omit2, ...rest } = updates as Partial<Product>;
+      const { error } = await supabase.from('products').update(mapProductToRow(rest)).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
