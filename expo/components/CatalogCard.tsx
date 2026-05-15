@@ -63,7 +63,7 @@ function CatalogCard({
   );
 
   const categoryName =
-    categories.find((c) => c.id === product.category)?.[language] ?? product.category;
+    categories.find((c) => c.id === product.category)?.[language] ?? product.category ?? '';
 
   const handleFavorite = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -83,7 +83,7 @@ function CatalogCard({
   const priceDisplay = product.price !== null ? `$${product.price.toFixed(0)}` : '\u2014';
   const hasOldPrice = product.oldPrice != null && product.price != null && product.oldPrice > product.price;
 
-  const imageAlt = `${product.modelNumber} | ${categoryName}`.trim();
+  const imageAlt = `${product.modelNumber ?? ''} | ${categoryName}`.trim();
 
   const inCart = quantity > 0;
   const showHeart = true;
@@ -230,7 +230,7 @@ function CatalogCard({
         <View style={styles.infoMens}>
           <View style={styles.mensRowExact}>
             <Text style={[styles.brandName, styles.mensTextLeft]} numberOfLines={1}>
-              {categoryName.toUpperCase()}
+              {(categoryName ?? '').toUpperCase()}
             </Text>
             <Pressable
               onPress={(e) => {
@@ -287,7 +287,7 @@ function CatalogCard({
 
       <View style={styles.info}>
         <Text style={styles.brandName} numberOfLines={1}>
-          {categoryName.toUpperCase()}
+          {(categoryName ?? '').toUpperCase()}
         </Text>
         <Text style={styles.productName} numberOfLines={1}>
           {product.modelNumber}
