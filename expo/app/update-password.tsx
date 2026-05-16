@@ -109,7 +109,7 @@ export default function UpdatePasswordScreen() {
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back();
-    else router.replace('/admin' as any);
+    else router.replace('/login' as any);
   }, [router]);
 
   return (

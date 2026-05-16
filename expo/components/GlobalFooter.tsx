@@ -8,7 +8,6 @@ import {
   Linking,
 } from 'react-native';
 import { Send, Instagram, Smartphone } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -53,7 +52,6 @@ const linkStyles = StyleSheet.create({
 
 function GlobalFooter() {
   const { t } = useAuth();
-  const router = useRouter();
   const responsive = useResponsive();
   const { settings: ds } = useSiteSettings();
   const isDesktop = responsive.isWebDesktop;
@@ -124,13 +122,6 @@ function GlobalFooter() {
           <Text style={styles.copyright}>
             {t('footerCopyright').replace('{year}', String(new Date().getFullYear()))}
           </Text>
-          <Pressable
-            onPress={() => router.push('/rules' as any)}
-            style={styles.staffLink}
-            testID="footer-staff-login"
-          >
-            <Text style={styles.staffLinkText}>{t('staffPortal')}</Text>
-          </Pressable>
         </View>
       </View>
     </View>
