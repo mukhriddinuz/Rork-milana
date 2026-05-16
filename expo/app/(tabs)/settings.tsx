@@ -261,7 +261,7 @@ function GuestGateway({ router, t }: { router: any; t: (key: string) => string }
 
         <View style={guestStyles.actions}>
           <Pressable
-            onPress={() => handlePress('/admin')}
+            onPress={() => handlePress('/login')}
             style={({ pressed }) => [guestStyles.primaryBtn, pressed && guestStyles.primaryBtnPressed]}
             testID="guest-sign-in"
           >
