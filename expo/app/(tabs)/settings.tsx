@@ -30,6 +30,7 @@ import {
   Home,
   Package,
   Shield,
+  LayoutDashboard,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -371,6 +372,15 @@ function ProfileDashboard({
       label: t('menuSecurity'),
       sublabel: t('descSecurity'),
       onPress: () => {},
+    },
+    {
+      icon: <LayoutDashboard size={20} color="#1A1A1A" />,
+      label: 'Command Center',
+      sublabel: 'Manage orders and inventory',
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        router.push('/manager' as any);
+      },
     },
     {
       icon: <LogOut size={20} color="#E53935" />,
