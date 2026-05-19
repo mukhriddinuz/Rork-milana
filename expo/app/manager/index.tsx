@@ -262,6 +262,21 @@ function OrdersPanel() {
         return;
       }
       setOrders((data ?? []).map((r) => mapOrderRow(r as OrderRow)));
+
+      const { data: auditRows, error: auditErr } = await supabase
+        .from('order_status_audit')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (auditErr) {
+        console.error('[Manager.Audit] bulk fetch failed:', auditErr.message);
+      } else if (auditRows) {
+        const grouped: Record<string, AuditEntry[]> = {};
+        for (const row of auditRows as AuditEntry[]) {
+          if (!grouped[row.order_id]) grouped[row.order_id] = [];
+          grouped[row.order_id].push(row);
+        }
+        setAuditByOrder(grouped);
+      }
     } catch (e) {
       console.error('[Manager.Orders] threw:', e);
     } finally {
@@ -391,6 +406,13 @@ function OrdersPanel() {
       ) : (
         filtered.map((order) => {
           const isOpen = expanded === order.id;
+          const latestAudit = auditByOrder[order.id]?.[0];
+          const latestWho =
+            latestAudit?.changed_by_email &&
+            user?.email &&
+            latestAudit.changed_by_email.toLowerCase() === user.email.toLowerCase()
+              ? 'you'
+              : latestAudit?.changed_by_email ?? null;
           return (
             <View key={order.id} style={styles.orderCard}>
               <Pressable
@@ -408,6 +430,12 @@ function OrdersPanel() {
                     {formatDate(order.createdAt)} · {order.items.length} item
                     {order.items.length === 1 ? '' : 's'}
                   </Text>
+                  {latestAudit ? (
+                    <Text style={styles.orderUpdated} numberOfLines={1}>
+                      Updated {formatRelative(latestAudit.created_at)}
+                      {latestWho ? ` by ${latestWho}` : ''}
+                    </Text>
+                  ) : null}
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
                   <Text style={styles.orderTotal}>{formatPrice(order.total)}</Text>
@@ -1275,6 +1303,12 @@ const styles = StyleSheet.create({
   },
   orderClient: { fontSize: 13, color: '#1A1A1A', fontWeight: '500' as const },
   orderMeta: { fontSize: 11, color: '#999999' },
+  orderUpdated: {
+    fontSize: 10,
+    color: '#AAAAAA',
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
   orderTotal: {
     fontFamily: FontFamily.medium,
     fontSize: 14,
