@@ -5,20 +5,13 @@ import {
   TextInput,
   FlatList,
   Pressable,
-  Switch,
-  Alert,
   StyleSheet,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import {
   Search,
-  Plus,
-  Trash2,
   Package,
-  Pencil,
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductsContext';
@@ -27,16 +20,12 @@ import EmptyState from '@/components/EmptyState';
 import { Product, ProductStatus } from '@/types';
 
 export default function ProductsScreen() {
-  const router = useRouter();
-  const { user, language, t } = useAuth();
-  const { products, updateProduct, deleteProduct } = useProducts();
+  const { language, t } = useAuth();
+  const { products } = useProducts();
   const { categories } = useCategories();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ProductStatus>('all');
-  const [editingPrices, setEditingPrices] = useState<Record<string, string>>({});
-
-  const isAccountant = user?.role === 'accountant';
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -54,82 +43,11 @@ export default function ProductsScreen() {
     return result;
   }, [products, statusFilter, search]);
 
-  const handleDelete = useCallback(
-    (product: Product) => {
-      Alert.alert(t('confirmDelete'), `${product.modelNumber}`, [
-        { text: t('no'), style: 'cancel' },
-        {
-          text: t('yes'),
-          style: 'destructive',
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            deleteProduct(product.id);
-          },
-        },
-      ]);
-    },
-    [deleteProduct, t],
-  );
-
-  const handlePriceBlur = useCallback(
-    (productId: string) => {
-      const priceStr = editingPrices[productId];
-      if (priceStr !== undefined) {
-        const price = parseFloat(priceStr);
-        if (!isNaN(price) && price >= 0) {
-          updateProduct(productId, { price });
-        }
-        setEditingPrices((prev) => {
-          const next = { ...prev };
-          delete next[productId];
-          return next;
-        });
-      }
-    },
-    [editingPrices, updateProduct],
-  );
-
-  const handleTogglePublish = useCallback(
-    (product: Product) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const newStatus: ProductStatus =
-        product.status === 'published' ? 'draft' : 'published';
-      if (newStatus === 'published' && product.price === null) {
-        Alert.alert(t('setPrice'), t('noPrice'));
-        return;
-      }
-      updateProduct(product.id, { status: newStatus });
-    },
-    [updateProduct, t],
-  );
-
-  const handleToggleTrending = useCallback(
-    (product: Product) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      updateProduct(product.id, { isTrending: !product.isTrending });
-      console.log('[Products] Trending toggled:', product.id, !product.isTrending);
-    },
-    [updateProduct],
-  );
-
-  const handleEdit = useCallback(
-    (product: Product) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push({
-        pathname: '/add-product' as any,
-        params: { editId: product.id },
-      });
-    },
-    [router],
-  );
-
   const renderProduct = useCallback(
     ({ item }: { item: Product }) => {
       const categoryName =
         categories.find((c) => c.id === item.category)?.[language] ?? item.category;
       const isDraft = item.status === 'draft';
-      const priceDisplay =
-        editingPrices[item.id] ?? (item.price !== null ? item.price.toFixed(2) : '');
 
       return (
         <View style={styles.productRow}>
@@ -174,85 +92,11 @@ export default function ProductsScreen() {
             <Text style={styles.productMeta}>
               {item.variantNumber} · {categoryName}
             </Text>
-
-            {isAccountant && (
-              <View style={styles.accountantControls}>
-                <View style={styles.priceInputRow}>
-                  <Text style={styles.priceLabel}>$</Text>
-                  <TextInput
-                    style={styles.priceInput}
-                    value={priceDisplay}
-                    onChangeText={(text) =>
-                      setEditingPrices((prev) => ({ ...prev, [item.id]: text }))
-                    }
-                    onBlur={() => handlePriceBlur(item.id)}
-                    keyboardType="decimal-pad"
-                    placeholder={t('setPrice')}
-                    placeholderTextColor={Colors.textTertiary}
-                  />
-                </View>
-                <View style={styles.toggleRow}>
-                  <Text style={styles.toggleLabel}>
-                    {item.status === 'published' ? t('published') : t('publish')}
-                  </Text>
-                  <Switch
-                    value={item.status === 'published'}
-                    onValueChange={() => handleTogglePublish(item)}
-                    trackColor={{
-                      false: Colors.border,
-                      true: Colors.primary,
-                    }}
-                    thumbColor={Colors.white}
-                  />
-                </View>
-                <View style={styles.toggleRow}>
-                  <Text style={styles.toggleLabel}>{t('trendingToggle')}</Text>
-                  <Switch
-                    value={item.isTrending}
-                    onValueChange={() => handleToggleTrending(item)}
-                    trackColor={{
-                      false: Colors.border,
-                      true: Colors.primary,
-                    }}
-                    thumbColor={Colors.white}
-                  />
-                </View>
-                <View style={styles.actionRow}>
-                  <Pressable
-                    onPress={() => handleEdit(item)}
-                    style={styles.editBtn}
-                    testID={`edit-${item.id}`}
-                  >
-                    <Pencil size={14} color={Colors.text} />
-                    <Text style={styles.editBtnText}>{t('edit')}</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => handleDelete(item)}
-                    style={styles.deleteBtn}
-                    testID={`delete-${item.id}`}
-                  >
-                    <Trash2 size={14} color={Colors.danger} />
-                    <Text style={styles.deleteBtnText}>{t('delete')}</Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
           </View>
         </View>
       );
     },
-    [
-      language,
-      t,
-      categories,
-      isAccountant,
-      editingPrices,
-      handlePriceBlur,
-      handleTogglePublish,
-      handleToggleTrending,
-      handleDelete,
-      handleEdit,
-    ],
+    [language, t, categories],
   );
 
   return (
@@ -303,19 +147,6 @@ export default function ProductsScreen() {
           />
         }
       />
-
-      {isAccountant && (
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push('/add-product' as any);
-          }}
-          style={styles.fab}
-          testID="add-product-fab"
-        >
-          <Plus size={22} color={Colors.white} />
-        </Pressable>
-      )}
     </View>
   );
 }

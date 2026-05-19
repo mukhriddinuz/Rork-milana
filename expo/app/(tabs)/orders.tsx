@@ -1,10 +1,8 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
   Pressable,
-  Alert,
   Platform,
   StyleSheet,
   useWindowDimensions,
@@ -12,8 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { FileText, Download, Truck, ArrowRight, ShoppingCart } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { FileText, Truck, ArrowRight, ShoppingCart } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders } from '@/contexts/OrdersContext';
@@ -22,12 +19,10 @@ import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useCategories } from '@/contexts/CategoriesContext';
 import { useWebHeader } from '@/contexts/WebHeaderContext';
-import WebHeader, { TOTAL_HEADER_HEIGHT } from '@/components/WebHeader';
+import WebHeader from '@/components/WebHeader';
 import GlobalFooter from '@/components/GlobalFooter';
-import EmptyState from '@/components/EmptyState';
 import CatalogCard from '@/components/CatalogCard';
 import Toast from '@/components/Toast';
-import { useClients } from '@/contexts/ClientsContext';
 import { Order, Product } from '@/types';
 
 function RecommendationsGrid({
@@ -98,8 +93,7 @@ export default function OrdersScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { user, language, t } = useAuth();
-  const { orders, markOrdersSeen, isOrderUnseen, unseenCount, toastMessage, dismissToast } = useOrders();
-  const { getClientById } = useClients();
+  const { orders, toastMessage, dismissToast } = useOrders();
   const { products } = useProducts();
   const { addToCart, removeFromCart, getQuantity } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -107,16 +101,11 @@ export default function OrdersScreen() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const { search, setSearch } = useWebHeader();
 
-  const isClient = user?.role === 'client';
-  const isWarehouse = user?.role === 'warehouse';
   const isDesktop = Platform.OS === 'web' && width >= 768;
 
   const visibleOrders = useMemo(() => {
-    if (isClient) {
-      return orders.filter((o) => o.clientId === user?.id);
-    }
-    return orders;
-  }, [orders, isClient, user?.id]);
+    return orders.filter((o) => o.clientId === user?.id);
+  }, [orders, user?.id]);
 
   const recommendations = useMemo(
     () => products
@@ -133,223 +122,10 @@ export default function OrdersScreen() {
     [router],
   );
 
-  useEffect(() => {
-    if (!isClient && visibleOrders.length > 0) {
-      const unseenIds = visibleOrders.filter((o) => isOrderUnseen(o.id)).map((o) => o.id);
-      if (unseenIds.length > 0) {
-        const timer = setTimeout(() => {
-          markOrdersSeen(unseenIds);
-        }, 2000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [visibleOrders, isClient, markOrdersSeen, isOrderUnseen]);
-
-  const generateCSV = useCallback(() => {
-    const headers = [
-      'Order ID', 'Client', 'Date', 'Model', 'Variant', 'Price', 'Qty', 'Subtotal', 'Order Total', 'Status',
-    ];
-    const rows = visibleOrders.flatMap((order) =>
-      order.items.map((item) =>
-        [
-          order.id, order.clientName, new Date(order.createdAt).toLocaleDateString(),
-          item.modelNumber, item.variantNumber, `$${item.price.toFixed(2)}`,
-          item.quantity.toString(), `$${(item.price * item.quantity).toFixed(2)}`,
-          `$${order.total.toFixed(2)}`, order.status,
-        ].join(','),
-      ),
-    );
-    return [headers.join(','), ...rows].join('\n');
-  }, [visibleOrders]);
-
-  const generatePdfHtml = useCallback(
-    (order: Order) => {
-      const pageSize = 8;
-      const totalPages = Math.ceil(order.items.length / pageSize);
-      let pagesHtml = '';
-      for (let page = 0; page < totalPages; page++) {
-        const pageItems = order.items.slice(page * pageSize, (page + 1) * pageSize);
-        const gridCells = pageItems
-          .map(
-            (item) => `
-          <div style="border:1px solid #E0E0E0;border-radius:6px;overflow:hidden;background:#FFFFFF;">
-            <div style="width:100%;aspect-ratio:1;background:#F5F5F6;overflow:hidden;">
-              <img src="${item.image}" style="width:100%;height:100%;object-fit:cover;display:block;" />
-            </div>
-            <div style="padding:8px 10px;">
-              <div style="font-size:14px;font-weight:700;color:#1A1A1A;margin-bottom:2px;">${item.modelNumber}</div>
-              <div style="font-size:12px;color:#6B6B6B;margin-bottom:6px;">${item.variantNumber}</div>
-              <div style="background:#CB11AB;color:#FFFFFF;font-size:16px;font-weight:800;text-align:center;padding:6px;border-radius:4px;">
-                ${t('quantity')}: ${item.quantity}
-              </div>
-            </div>
-          </div>`,
-          )
-          .join('');
-
-        const pageBreak = page < totalPages - 1 ? 'page-break-after:always;' : '';
-        pagesHtml += `
-        <div style="${pageBreak}padding:20px 0;">
-          ${page === 0 ? `
-          <div style="border-bottom:3px solid #CB11AB;padding-bottom:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end;">
-            <div>
-              <h1 style="color:#1A1A1A;margin:0;font-size:22px;letter-spacing:4px;">MILANA PREMIUM</h1>
-              <p style="color:#CB11AB;margin:3px 0 0;font-size:11px;">${t('packingList')}</p>
-            </div>
-          </div>
-          <div style="margin-bottom:16px;padding:10px 14px;background:#F5F5F6;border-radius:6px;display:flex;gap:20px;flex-wrap:wrap;">
-            <span style="font-size:13px;"><strong>${t('clientInfo')}:</strong> ${order.clientName}</span>
-            <span style="font-size:13px;"><strong>${t('orderNumber')}:</strong> #${order.id.slice(-6)}</span>
-            <span style="font-size:13px;"><strong>${t('orderDate')}:</strong> ${new Date(order.createdAt).toLocaleDateString()}</span>
-            <span style="font-size:13px;"><strong>${t('items')}:</strong> ${order.items.length}</span>
-          </div>` : `
-          <div style="margin-bottom:12px;padding:8px 14px;background:#F5F5F6;border-radius:4px;font-size:11px;color:#6B6B6B;">
-            ${order.clientName} — #${order.id.slice(-6)} — ${t('items')} ${page * pageSize + 1}-${Math.min((page + 1) * pageSize, order.items.length)} / ${order.items.length}
-          </div>`}
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-            ${gridCells}
-          </div>
-          <div style="text-align:right;margin-top:10px;font-size:10px;color:#9E9E9E;">
-            ${page + 1} / ${totalPages}
-          </div>
-        </div>`;
-      }
-      return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Order ${order.id}</title>
-<style>@page{margin:16mm}body{font-family:Arial,sans-serif;margin:0;padding:0;color:#1A1A1A}*{box-sizing:border-box}</style>
-</head><body>${pagesHtml}</body></html>`;
-    },
-    [t],
-  );
-
-  const handleExportPdf = useCallback(
-    async (order: Order) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const html = generatePdfHtml(order);
-      if (Platform.OS === 'web') {
-        try {
-          const win = window.open('', '_blank');
-          if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 500); }
-        } catch (e) { console.error('[Orders] PDF export error:', e); }
-      } else {
-        try {
-          const { File, Paths } = await import('expo-file-system');
-          const Sharing = await import('expo-sharing');
-          const file = new File(Paths.cache, `order_${order.id}.html`);
-          file.create(); file.write(html);
-          const canShare = await Sharing.isAvailableAsync();
-          if (canShare) { await Sharing.shareAsync(file.uri, { mimeType: 'text/html', dialogTitle: t('exportPdf') }); }
-        } catch (e) { console.error('[Orders] Native PDF export error:', e); Alert.alert('Error', 'Export failed'); }
-      }
-    },
-    [generatePdfHtml, t],
-  );
-
-  const handleExport = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const csv = generateCSV();
-    if (Platform.OS === 'web') {
-      try {
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a'); link.href = url; link.download = `orders_${Date.now()}.csv`;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
-        Alert.alert('✓', t('exportSuccess'));
-      } catch (e) { console.error('[Orders] Web export error:', e); }
-    } else {
-      try {
-        const { File, Paths } = await import('expo-file-system');
-        const Sharing = await import('expo-sharing');
-        const file = new File(Paths.cache, `orders_${Date.now()}.csv`);
-        file.create(); file.write(csv);
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) { await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: t('exportExcel') }); }
-        else { Alert.alert('✓', t('exportSuccess')); }
-      } catch (e) { console.error('[Orders] Native export error:', e); Alert.alert('Error', 'Export failed'); }
-    }
-  }, [generateCSV, t]);
-
   const formatDate = useCallback((dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   }, []);
-
-  const renderOrder = useCallback(
-    ({ item }: { item: Order }) => {
-      const colors = statusColors[item.status];
-      const isExpanded = expandedOrder === item.id;
-      const unseen = !isClient && isOrderUnseen(item.id);
-
-      return (
-        <Pressable
-          onPress={() => setExpandedOrder(isExpanded ? null : item.id)}
-          style={[styles.orderCard, unseen && styles.orderCardUnseen]}
-        >
-          <View style={styles.orderHeader}>
-            <View style={styles.orderLeft}>
-              {unseen && <View style={styles.unseenDot} />}
-              <View>
-                <Text style={styles.orderNumber}>
-                  {t('orderNumber')} #{item.id.slice(-6)}
-                </Text>
-                {!isClient && (
-                  <View>
-                    <Text style={styles.clientName}>{item.clientName}</Text>
-                    {(() => {
-                      const clientProfile = getClientById(item.clientId);
-                      return clientProfile ? (
-                        <Text style={styles.clientLocation}>{clientProfile.location} · {clientProfile.phone}</Text>
-                      ) : null;
-                    })()}
-                  </View>
-                )}
-                <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
-              </View>
-            </View>
-            <View style={styles.orderRight}>
-              <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
-                <Text style={[styles.statusText, { color: colors.text }]}>
-                  {t(item.status)}
-                </Text>
-              </View>
-              <Text style={styles.orderTotal}>${item.total.toFixed(2)}</Text>
-            </View>
-          </View>
-          <Text style={styles.itemCount}>
-            {item.items.length} {t('items')}
-          </Text>
-
-          {isExpanded && (
-            <View style={styles.orderDetails}>
-              {item.items.map((orderItem, idx) => (
-                <View key={idx} style={styles.detailRow}>
-                  {orderItem.image ? (
-                    <Image source={{ uri: orderItem.image }} style={styles.detailImage} contentFit="cover" />
-                  ) : (
-                    <View style={styles.detailImagePlaceholder} />
-                  )}
-                  <View style={styles.detailInfo}>
-                    <Text style={styles.detailModel} numberOfLines={1}>{orderItem.modelNumber}</Text>
-                    <Text style={styles.detailVariant} numberOfLines={1}>{orderItem.variantNumber}</Text>
-                    <Text style={styles.detailQty}>${orderItem.price.toFixed(2)} × {orderItem.quantity}</Text>
-                  </View>
-                  <Text style={styles.detailSubtotal}>${(orderItem.price * orderItem.quantity).toFixed(2)}</Text>
-                </View>
-              ))}
-              {(isWarehouse || user?.role === 'accountant') && (
-                <Pressable onPress={() => handleExportPdf(item)} style={styles.pdfBtn} testID={`export-pdf-${item.id}`}>
-                  <Download size={14} color={Colors.white} />
-                  <Text style={styles.pdfBtnText}>{t('exportPdf')}</Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-        </Pressable>
-      );
-    },
-    [expandedOrder, isClient, isWarehouse, user?.role, t, formatDate, isOrderUnseen, handleExportPdf, getClientById],
-  );
-
-  const isStaff = user?.role === 'warehouse' || user?.role === 'accountant';
 
   const renderWebHeader = () => isDesktop ? (
     <WebHeader
@@ -364,7 +140,7 @@ export default function OrdersScreen() {
     />
   ) : null;
 
-  if (isClient && visibleOrders.length === 0) {
+  if (visibleOrders.length === 0) {
     return (
       <View style={styles.container}>
         {renderWebHeader()}
@@ -423,8 +199,7 @@ export default function OrdersScreen() {
     );
   }
 
-  if (isClient && visibleOrders.length > 0) {
-    return (
+  return (
       <View style={styles.container}>
         {renderWebHeader()}
         <ScrollView contentContainerStyle={styles.scrollContentOuter} showsVerticalScrollIndicator={false}>
@@ -525,33 +300,6 @@ export default function OrdersScreen() {
         </ScrollView>
       </View>
     );
-  }
-
-  return (
-    <View style={styles.container}>
-      <Toast message={t('newOrderNotification')} visible={!!toastMessage} onDismiss={dismissToast} />
-      {isStaff && visibleOrders.length > 0 && (
-        <View style={styles.exportBar}>
-          <Text style={styles.orderCountText}>
-            {visibleOrders.length} {t('orders').toLowerCase()}
-            {unseenCount > 0 ? ` · ${unseenCount} ${t('newStatus').toLowerCase()}` : ''}
-          </Text>
-          <Pressable onPress={handleExport} style={styles.exportBtn} testID="export-excel">
-            <Download size={14} color={Colors.text} />
-            <Text style={styles.exportText}>{t('exportExcel')}</Text>
-          </Pressable>
-        </View>
-      )}
-      <FlatList
-        data={visibleOrders}
-        renderItem={renderOrder}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<EmptyState icon={<FileText size={48} color={Colors.textTertiary} />} title={t('noOrders')} />}
-      />
-    </View>
-  );
 }
 
 const recsStyles = StyleSheet.create({

@@ -5,21 +5,16 @@ import createContextHook from '@nkzw/create-context-hook';
 import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { User, Language, UserRole } from '@/types';
+import { User, Language } from '@/types';
 import { translations } from '@/constants/translations';
 import { supabase } from '@/lib/supabase';
 
 /**
  * Map a Supabase auth user to our local `User` shape so the rest of the app
- * (which expects { id, name, role, username }) keeps working unchanged.
+ * keeps working unchanged. All authenticated users are clients.
  */
 function mapSupabaseUser(su: SupabaseUser): User {
   const meta = (su.user_metadata ?? {}) as Record<string, unknown>;
-  const metaRole = typeof meta.role === 'string' ? (meta.role as UserRole) : undefined;
-  const role: UserRole =
-    metaRole === 'warehouse' || metaRole === 'accountant' || metaRole === 'client'
-      ? metaRole
-      : 'client';
   const name =
     (typeof meta.name === 'string' && meta.name) ||
     (typeof meta.full_name === 'string' && (meta.full_name as string)) ||
@@ -30,7 +25,7 @@ function mapSupabaseUser(su: SupabaseUser): User {
   return {
     id: su.id,
     name,
-    role,
+    role: 'client',
     username,
   };
 }
@@ -39,16 +34,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<User | null>(null);
   const [language, setLanguage] = useState<Language>('ru');
   const [authReady, setAuthReady] = useState<boolean>(false);
-  const initialized = useRef(false);
-
-  // Legacy local user (used by demo role-based login flows in admin/rules screens).
-  const authQuery = useQuery({
-    queryKey: ['auth'],
-    queryFn: async () => {
-      const stored = await AsyncStorage.getItem('milana_auth');
-      return stored ? (JSON.parse(stored) as User) : null;
-    },
-  });
+  const mountedRef = useRef(true);
 
   const langQuery = useQuery({
     queryKey: ['language'],
@@ -59,13 +45,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   });
 
   useEffect(() => {
-    if (authQuery.data !== undefined && !initialized.current) {
-      setUser(authQuery.data);
-      initialized.current = true;
-    }
-  }, [authQuery.data]);
-
-  useEffect(() => {
     if (langQuery.data) {
       setLanguage(langQuery.data);
     }
@@ -73,34 +52,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   // Hydrate from Supabase session on mount, then subscribe to auth changes.
   useEffect(() => {
-    let isMounted = true;
+    mountedRef.current = true;
 
-    const persist = async (u: User | null) => {
-      if (u) {
-        await AsyncStorage.setItem('milana_auth', JSON.stringify(u));
-      } else {
-        await AsyncStorage.removeItem('milana_auth');
-      }
-    };
-
-    const applySession = async (session: Session | null) => {
-      if (!isMounted) return;
-      if (session?.user) {
-        const mapped = mapSupabaseUser(session.user);
-        setUser(mapped);
-        await persist(mapped);
-      }
+    const applySession = (session: Session | null) => {
+      if (!mountedRef.current) return;
+      setUser(session?.user ? mapSupabaseUser(session.user) : null);
     };
 
     (async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (error) console.log('[Auth] getSession error:', error.message);
-        await applySession(data?.session ?? null);
+        applySession(data?.session ?? null);
       } catch (e) {
         console.log('[Auth] getSession failed:', e);
       } finally {
-        if (isMounted) setAuthReady(true);
+        if (mountedRef.current) setAuthReady(true);
       }
     })();
 
@@ -108,18 +75,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log('[Auth] state change:', event);
       if (event === 'SIGNED_OUT') {
         setUser(null);
-        AsyncStorage.removeItem('milana_auth').catch(() => {});
         return;
       }
       if (session?.user) {
-        const mapped = mapSupabaseUser(session.user);
-        setUser(mapped);
-        AsyncStorage.setItem('milana_auth', JSON.stringify(mapped)).catch(() => {});
+        setUser(mapSupabaseUser(session.user));
       }
     });
 
     return () => {
-      isMounted = false;
+      mountedRef.current = false;
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -129,7 +93,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     async (
       email: string,
       password: string,
-      metadata?: { name?: string; username?: string; role?: UserRole },
+      metadata?: { name?: string; username?: string; role?: 'client' },
     ): Promise<{ user: User | null; error: string | null }> => {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -141,10 +105,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return { user: null, error: error.message };
       }
       const mapped = data.user ? mapSupabaseUser(data.user) : null;
-      if (mapped) {
-        setUser(mapped);
-        await AsyncStorage.setItem('milana_auth', JSON.stringify(mapped));
-      }
+      if (mapped) setUser(mapped);
       return { user: mapped, error: null };
     },
     [],
@@ -162,17 +123,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         return { user: null, error: error.message };
       }
       const mapped = data.user ? mapSupabaseUser(data.user) : null;
-      if (mapped) {
-        setUser(mapped);
-        await AsyncStorage.setItem('milana_auth', JSON.stringify(mapped));
-      }
+      if (mapped) setUser(mapped);
       return { user: mapped, error: null };
     },
     [],
   );
 
-  /** Send a password reset email via Supabase. Includes redirectTo deep link
-   *  pointing at the /update-password screen so the recovery flow can complete. */
+  /** Send a password reset email via Supabase. */
   const resetPasswordForEmail = useCallback(
     async (email: string): Promise<{ error: string | null }> => {
       let redirectTo: string | undefined;
@@ -198,7 +155,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     [],
   );
 
-  /** Update the password of the currently authenticated (recovery) user. */
+  /** Update the password of the currently authenticated user. */
   const updatePassword = useCallback(
     async (newPassword: string): Promise<{ error: string | null }> => {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
@@ -211,50 +168,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     [],
   );
 
-  /** Real Supabase sign out (also clears the legacy local user). */
+  /** Real Supabase sign out. */
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.log('[Auth] signOut error:', error.message);
     setUser(null);
-    initialized.current = false;
-    await AsyncStorage.removeItem('milana_auth');
   }, []);
 
-  // ----- Legacy demo flows kept for backward compatibility -----
-  // These are still used by admin/rules/register screens (role-based local logins).
-
-  const login = useCallback(async (role: UserRole) => {
-    const demoUsers: Record<UserRole, User> = {
-      warehouse: { id: 'w1', name: 'Ombor / Склад', role: 'warehouse', username: 'warehouse' },
-      accountant: { id: 'a1', name: 'Buxgalter / Бухгалтер', role: 'accountant', username: 'accountant' },
-      client: { id: 'c1', name: 'Mijoz / Клиент', role: 'client', username: 'client' },
-    };
-    const newUser = demoUsers[role];
-    setUser(newUser);
-    await AsyncStorage.setItem('milana_auth', JSON.stringify(newUser));
-    console.log('[Auth] Logged in as:', role);
-  }, []);
-
-  const loginAsClient = useCallback(
-    async (clientId: string, clientName: string, username: string) => {
-      const newUser: User = { id: clientId, name: clientName, role: 'client', username };
-      setUser(newUser);
-      await AsyncStorage.setItem('milana_auth', JSON.stringify(newUser));
-      console.log('[Auth] Client logged in:', clientId, username);
-    },
-    [],
-  );
-
-  /** Logout alias that also signs out from Supabase if a session exists. */
+  /** Alias for screens that still call `logout()`. */
   const logout = useCallback(async () => {
     await signOut();
-    console.log('[Auth] Logged out');
   }, [signOut]);
 
   const changeLanguage = useCallback(async (lang: Language) => {
     setLanguage(lang);
     await AsyncStorage.setItem('milana_language', lang);
-    console.log('[Auth] Language changed to:', lang);
   }, []);
 
   const t = useCallback(
@@ -267,18 +195,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   return {
     user,
     language,
-    // Real Supabase auth
     signUp,
     signIn,
     signOut,
+    logout,
     resetPasswordForEmail,
     updatePassword,
-    // Legacy/demo helpers (kept so existing screens keep working)
-    login,
-    loginAsClient,
-    logout,
     changeLanguage,
     t,
-    isLoading: authQuery.isLoading || langQuery.isLoading || !authReady,
+    isLoading: langQuery.isLoading || !authReady,
   };
 });

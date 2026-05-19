@@ -1,4 +1,4 @@
-export type UserRole = 'warehouse' | 'accountant' | 'client';
+export type UserRole = 'client';
 export type Language = 'uz' | 'ru';
 export type ProductStatus = 'draft' | 'published';
 export type ClientStatus = 'standard' | 'vip';
@@ -10,7 +10,6 @@ export interface User {
   name: string;
   role: UserRole;
   username: string;
-  password?: string;
 }
 
 export interface ClientProfile {

@@ -13,28 +13,19 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
   User,
   Globe,
   LogOut,
   ChevronRight,
-  FolderOpen,
-  Plus,
   Pencil,
-  Trash2,
   X,
-  Check,
   Lock,
   Eye,
   EyeOff,
   MapPin,
   Save,
   Heart,
-  ShoppingBag,
-  Wallet,
-  HelpCircle,
-  MessageCircle,
   Settings,
   Home,
   Package,
@@ -44,18 +35,14 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWebHeader } from '@/contexts/WebHeaderContext';
-import WebHeader, { TOTAL_HEADER_HEIGHT } from '@/components/WebHeader';
+import WebHeader from '@/components/WebHeader';
 import MobileHeader from '@/components/MobileHeader';
-import { MOBILE_HEADER_HEIGHT } from '@/components/MobileHeader';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useCategories } from '@/contexts/CategoriesContext';
 import { useClients } from '@/contexts/ClientsContext';
-import { useProducts } from '@/contexts/ProductsContext';
-import { useCart } from '@/contexts/CartContext';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import GlobalFooter from '@/components/GlobalFooter';
-import { Language, Product } from '@/types';
+import { Language } from '@/types';
 import { FontFamily } from '@/constants/typography';
 
 interface DashNavItem {
@@ -445,25 +432,16 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { user, language, changeLanguage, logout, t, updatePassword } = useAuth();
-  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
   const { getClientById, updateClientProfile } = useClients();
-  const { products } = useProducts();
-  const { addToCart, removeFromCart, getQuantity } = useCart();
-  const { isFavorite, toggleFavorite, totalFavorites } = useFavorites();
+  const { totalFavorites } = useFavorites();
   const { orders } = useOrders();
 
   const { search, setSearch } = useWebHeader();
-  const isAccountant = user?.role === 'accountant';
-  const isClient = user?.role === 'client';
-  const clientProfile = isClient && user ? getClientById(user.id) : null;
+  const isClient = !!user;
+  const clientProfile = user ? getClientById(user.id) : null;
   const responsive = useResponsive();
   const isDesktop = responsive.isWebDesktop;
   const isWebMobile = responsive.isWebMobile;
-
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-  const [catNameUz, setCatNameUz] = useState('');
-  const [catNameRu, setCatNameRu] = useState('');
 
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editFirstName, setEditFirstName] = useState('');
@@ -536,59 +514,6 @@ export default function SettingsScreen() {
     changeLanguage(lang);
   };
 
-  const handleAddCategory = () => {
-    if (!catNameUz.trim() || !catNameRu.trim()) {
-      Alert.alert(t('categoryNameUz'), t('categoryNameRu'));
-      return;
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addCategory({ uz: catNameUz.trim(), ru: catNameRu.trim() });
-    setCatNameUz('');
-    setCatNameRu('');
-    setShowAddCategory(false);
-  };
-
-  const handleStartEdit = (catId: string) => {
-    const cat = categories.find((c) => c.id === catId);
-    if (cat) {
-      setEditingCategoryId(catId);
-      setCatNameUz(cat.uz);
-      setCatNameRu(cat.ru);
-    }
-  };
-
-  const handleSaveEdit = () => {
-    if (!editingCategoryId || !catNameUz.trim() || !catNameRu.trim()) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateCategory(editingCategoryId, { uz: catNameUz.trim(), ru: catNameRu.trim() });
-    setEditingCategoryId(null);
-    setCatNameUz('');
-    setCatNameRu('');
-  };
-
-  const handleDeleteCategory = (catId: string) => {
-    const cat = categories.find((c) => c.id === catId);
-    if (!cat) return;
-    Alert.alert(t('confirmDelete'), cat[language], [
-      { text: t('no'), style: 'cancel' },
-      {
-        text: t('yes'),
-        style: 'destructive',
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          deleteCategory(catId);
-        },
-      },
-    ]);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingCategoryId(null);
-    setShowAddCategory(false);
-    setCatNameUz('');
-    setCatNameRu('');
-  };
-
   const handleStartEditProfile = () => {
     if (clientProfile) {
       setEditFirstName(clientProfile.firstName);
@@ -628,9 +553,7 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileRole}>
-                {t('role')}: {user?.role ? t(user.role) : ''}
-              </Text>
+              <Text style={styles.profileRole}>{user?.username}</Text>
             </View>
           </View>
         </View>
@@ -748,59 +671,6 @@ export default function SettingsScreen() {
             </View>
             <ChevronRight size={16} color={Colors.textTertiary} />
           </Pressable>
-        </View>
-      )}
-
-      {isAccountant && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <FolderOpen size={12} color={Colors.textTertiary} />
-              <Text style={styles.sectionTitle}>{t('manageCategories')}</Text>
-            </View>
-            {!showAddCategory && !editingCategoryId && (
-              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAddCategory(true); }} style={styles.addCatBtn}>
-                <Plus size={12} color={Colors.primary} />
-                <Text style={styles.addCatText}>{t('addCategory')}</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {(showAddCategory || editingCategoryId) && (
-            <View style={styles.catForm}>
-              <TextInput style={styles.catInput} value={catNameUz} onChangeText={setCatNameUz} placeholder={t('categoryNameUz')} placeholderTextColor={Colors.textTertiary} />
-              <TextInput style={styles.catInput} value={catNameRu} onChangeText={setCatNameRu} placeholder={t('categoryNameRu')} placeholderTextColor={Colors.textTertiary} />
-              <View style={styles.catFormActions}>
-                <Pressable onPress={handleCancelEdit} style={styles.catFormBtn}>
-                  <X size={14} color={Colors.textSecondary} />
-                  <Text style={styles.catCancelText}>{t('cancel')}</Text>
-                </Pressable>
-                <Pressable onPress={editingCategoryId ? handleSaveEdit : handleAddCategory} style={[styles.catFormBtn, styles.catSaveBtn]}>
-                  <Check size={14} color={Colors.white} />
-                  <Text style={styles.catSaveText}>{t('save')}</Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.card}>
-            {categories.map((cat, index) => (
-              <View key={cat.id} style={[styles.catRow, index < categories.length - 1 && styles.catRowBorder]}>
-                <View style={styles.catInfo}>
-                  <Text style={styles.catName}>{cat[language]}</Text>
-                  <Text style={styles.catSub}>{language === 'uz' ? cat.ru : cat.uz}</Text>
-                </View>
-                <View style={styles.catActions}>
-                  <Pressable onPress={() => handleStartEdit(cat.id)} style={styles.catActionBtn}>
-                    <Pencil size={13} color={Colors.textSecondary} />
-                  </Pressable>
-                  <Pressable onPress={() => handleDeleteCategory(cat.id)} style={styles.catActionBtn}>
-                    <Trash2 size={13} color={Colors.danger} />
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-          </View>
         </View>
       )}
 
