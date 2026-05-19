@@ -4,14 +4,17 @@ import {
   View,
   Text,
   Pressable,
-  Alert,
   StyleSheet,
   Platform,
   Animated,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { ShoppingBag, X, Package, Truck, Shirt } from 'lucide-react-native';
+import { ShoppingBag, X, Package, Truck, Shirt, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/contexts/ClientsContext';
@@ -163,7 +166,7 @@ export default function CartScreen() {
   const { user, language, t } = useAuth();
   const { products } = useProducts();
   const { items, addToCart, removeFromCart, removeItemCompletely, clearCart } = useCart();
-  const { submitOrder } = useOrders();
+  const { createOrder } = useOrders();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { categories } = useCategories();
 
@@ -177,6 +180,12 @@ export default function CartScreen() {
 
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewVisible, setQuickViewVisible] = useState<boolean>(false);
+  const [checkoutVisible, setCheckoutVisible] = useState<boolean>(false);
+  const [shippingAddress, setShippingAddress] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successVisible, setSuccessVisible] = useState<boolean>(false);
 
   const handleScroll = useMemo(
     () =>
@@ -218,9 +227,29 @@ export default function CartScreen() {
     router.push('/(tabs)/catalog' as any);
   }, [router, handleCloseQuickView]);
 
-  const handleSubmitOrder = useCallback(() => {
+  const handleOpenCheckout = useCallback(() => {
     if (cartProducts.length === 0) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (!user) {
+      router.push('/login' as any);
+      return;
+    }
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSubmitError(null);
+    setCheckoutVisible(true);
+  }, [cartProducts.length, user, router]);
+
+  const handleConfirmOrder = useCallback(async () => {
+    const address = shippingAddress.trim();
+    const phone = phoneNumber.trim();
+    if (!address || !phone) {
+      setSubmitError(t('fillAllFields', 'Please fill in all fields'));
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+    if (cartProducts.length === 0) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
     const orderItems: OrderItem[] = cartProducts.map((item) => ({
       productId: item.productId,
       modelNumber: item.product.modelNumber,
@@ -229,21 +258,32 @@ export default function CartScreen() {
       price: item.product.price ?? 0,
       quantity: item.quantity,
     }));
-    submitOrder({
-      clientId: user?.id ?? '',
-      clientName: user?.name ?? '',
+    const { order, error } = await createOrder({
       items: orderItems,
       total,
+      shippingAddress: address,
+      phoneNumber: phone,
     });
+    setIsSubmitting(false);
+
+    if (error || !order) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setSubmitError(error ?? 'Failed to place order');
+      return;
+    }
+
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     clearCart();
-    Alert.alert('✓', t('orderSubmitted'), [
-      {
-        text: t('orders'),
-        onPress: () => router.push('/(tabs)/orders' as any),
-      },
-      { text: 'OK' },
-    ]);
-  }, [cartProducts, total, user, submitOrder, clearCart, t, router]);
+    setCheckoutVisible(false);
+    setShippingAddress('');
+    setPhoneNumber('');
+    setSuccessVisible(true);
+  }, [shippingAddress, phoneNumber, cartProducts, total, createOrder, clearCart, t]);
+
+  const handleCloseSuccess = useCallback(() => {
+    setSuccessVisible(false);
+    router.push('/(tabs)/orders' as any);
+  }, [router]);
 
   const renderQuickView = () => (
     <QuickViewModal
@@ -410,7 +450,7 @@ export default function CartScreen() {
             </Text>
             {isDesktop ? (
               <Pressable
-                onPress={handleSubmitOrder}
+                onPress={handleOpenCheckout}
                 style={({ pressed }) => [styles.topCheckoutBtn, pressed && styles.primaryBtnPressed]}
                 testID="submit-order-top"
               >
@@ -480,7 +520,7 @@ export default function CartScreen() {
           {/* Bottom CTA */}
           <View style={styles.bottomCtaWrap}>
             <Pressable
-              onPress={handleSubmitOrder}
+              onPress={handleOpenCheckout}
               style={({ pressed }) => [styles.primaryBtnLarge, pressed && styles.primaryBtnPressed]}
               testID="submit-order-bottom"
             >
@@ -554,6 +594,130 @@ export default function CartScreen() {
         <GlobalFooter />
       </Animated.ScrollView>
       {renderQuickView()}
+
+      {/* Checkout Modal */}
+      <Modal
+        visible={checkoutVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isSubmitting && setCheckoutVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{(t('checkoutButton', 'Checkout')).toUpperCase()}</Text>
+              <Pressable
+                onPress={() => !isSubmitting && setCheckoutVisible(false)}
+                hitSlop={12}
+                testID="checkout-close"
+              >
+                <X size={22} color="#000" strokeWidth={1.2} />
+              </Pressable>
+            </View>
+            <View style={styles.modalDivider} />
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 8 }}
+            >
+              <Text style={styles.modalLabel}>{t('shippingAddress', 'Shipping address')}</Text>
+              <TextInput
+                value={shippingAddress}
+                onChangeText={setShippingAddress}
+                placeholder={t('shippingAddressPlaceholder', 'City, street, building, apt')}
+                placeholderTextColor="#B0B0B0"
+                style={styles.modalInput}
+                editable={!isSubmitting}
+                multiline
+                numberOfLines={2}
+                testID="checkout-address"
+              />
+
+              <Text style={[styles.modalLabel, { marginTop: 20 }]}>
+                {t('phoneNumber', 'Phone number')}
+              </Text>
+              <TextInput
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder={t('phoneNumberPlaceholder', '+998 ...')}
+                placeholderTextColor="#B0B0B0"
+                style={styles.modalInput}
+                keyboardType="phone-pad"
+                editable={!isSubmitting}
+                testID="checkout-phone"
+              />
+
+              <View style={styles.modalSummary}>
+                <Text style={styles.modalSummaryLabel}>
+                  {t('summaryTotal', 'Total')}
+                </Text>
+                <Text style={styles.modalSummaryValue}>${total.toFixed(2)}</Text>
+              </View>
+
+              {submitError ? (
+                <Text style={styles.modalError} testID="checkout-error">
+                  {submitError}
+                </Text>
+              ) : null}
+
+              <Pressable
+                onPress={handleConfirmOrder}
+                disabled={isSubmitting}
+                style={({ pressed }) => [
+                  styles.modalConfirmBtn,
+                  pressed && styles.primaryBtnPressed,
+                  isSubmitting && { opacity: 0.7 },
+                ]}
+                testID="checkout-confirm"
+              >
+                {isSubmitting ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={styles.modalConfirmBtnText}>
+                      {t('processingOrder', 'Processing...')}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.modalConfirmBtnText}>
+                    {t('confirmOrder', 'Confirm order')}
+                  </Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        visible={successVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseSuccess}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.successCard}>
+            <View style={styles.successIconWrap}>
+              <Check size={36} color="#000" strokeWidth={1.5} />
+            </View>
+            <Text style={styles.successTitle}>
+              {t('orderPlacedTitle', 'Order received')}
+            </Text>
+            <Text style={styles.successSubtitle}>
+              {t('orderPlacedSubtitle', 'We will contact you shortly.')}
+            </Text>
+            <Pressable
+              onPress={handleCloseSuccess}
+              style={({ pressed }) => [styles.modalConfirmBtn, pressed && styles.primaryBtnPressed]}
+              testID="checkout-success-cta"
+            >
+              <Text style={styles.modalConfirmBtnText}>
+                {t('viewOrders', 'View orders')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1088,5 +1252,134 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase' as const,
     fontFamily: LUXURY_FONT,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 460,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 28,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    color: '#000000',
+    letterSpacing: 2.5,
+    fontFamily: LUXURY_FONT,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: '#EEEEEE',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  modalLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: '#000000',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    marginBottom: 8,
+    fontFamily: LUXURY_FONT,
+  },
+  modalInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#000000',
+    fontFamily: LUXURY_FONT,
+    ...(Platform.OS === 'web' ? { outlineStyle: 'none' as any } : {}),
+  },
+  modalSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 28,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  modalSummaryLabel: {
+    fontSize: 14,
+    color: '#757575',
+    fontFamily: LUXURY_FONT,
+  },
+  modalSummaryValue: {
+    fontSize: 18,
+    fontWeight: '500' as const,
+    color: '#000000',
+    fontFamily: LUXURY_FONT,
+  },
+  modalError: {
+    fontSize: 12,
+    color: '#B00020',
+    marginTop: 12,
+    fontFamily: LUXURY_FONT,
+  },
+  modalConfirmBtn: {
+    marginTop: 24,
+    backgroundColor: '#000000',
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase' as const,
+    fontFamily: LUXURY_FONT,
+  },
+  successCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 32,
+    paddingTop: 36,
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  successIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1,
+    borderColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: '500' as const,
+    color: '#000000',
+    textAlign: 'center' as const,
+    fontFamily: LUXURY_FONT,
+    marginBottom: 10,
+  },
+  successSubtitle: {
+    fontSize: 13,
+    color: '#757575',
+    textAlign: 'center' as const,
+    lineHeight: 20,
+    fontFamily: LUXURY_FONT,
+    maxWidth: 320,
   },
 });

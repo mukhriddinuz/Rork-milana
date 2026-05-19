@@ -68,6 +68,8 @@ export interface Order {
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   createdAt: string;
   seen?: boolean;
+  shippingAddress?: string;
+  phoneNumber?: string;
 }
 
 export interface Category {
