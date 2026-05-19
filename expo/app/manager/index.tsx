@@ -34,6 +34,7 @@ import { useProducts } from '@/contexts/ProductsContext';
 import { useCategories } from '@/contexts/CategoriesContext';
 import { supabase } from '@/lib/supabase';
 import { FontFamily } from '@/constants/typography';
+import { isAdminEmail } from '@/utils/adminAllowlist';
 import type { Order, OrderItem, Product, ProductStatus, ProductVisibility } from '@/types';
 
 type Tab = 'orders' | 'products';
@@ -105,16 +106,42 @@ export default function ManagerDashboard() {
   const { user, isLoading: authLoading } = useAuth();
   const [tab, setTab] = useState<Tab>('orders');
 
+  const allowed = isAdminEmail(user?.email);
+
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+    if (!user) {
       router.replace('/login');
+      return;
     }
-  }, [authLoading, user, router]);
+    if (!allowed) {
+      router.replace('/(tabs)/catalog');
+    }
+  }, [authLoading, user, allowed, router]);
 
   if (authLoading || !user) {
     return (
       <View style={styles.loadingScreen}>
         <ActivityIndicator color="#1A1A1A" />
+      </View>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Text style={styles.unauthorizedEyebrow}>RESTRICTED</Text>
+        <Text style={styles.unauthorizedTitle}>Command Center</Text>
+        <Text style={styles.unauthorizedBody}>
+          This area is reserved for authorized staff.
+        </Text>
+        <Pressable
+          onPress={() => router.replace('/(tabs)/catalog')}
+          style={styles.unauthorizedBtn}
+          testID="unauthorized-back"
+        >
+          <Text style={styles.unauthorizedBtnText}>Return to catalog</Text>
+        </Pressable>
       </View>
     );
   }
@@ -936,6 +963,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 32,
+    gap: 10,
+  },
+  unauthorizedEyebrow: {
+    fontFamily: FontFamily.medium,
+    fontSize: 9,
+    letterSpacing: 4,
+    color: '#B53030',
+    textTransform: 'uppercase',
+  },
+  unauthorizedTitle: {
+    fontFamily: FontFamily.medium,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    letterSpacing: 3,
+    color: '#1A1A1A',
+    textTransform: 'uppercase',
+  },
+  unauthorizedBody: {
+    fontSize: 13,
+    color: '#666666',
+    textAlign: 'center',
+    maxWidth: 320,
+    marginTop: 6,
+  },
+  unauthorizedBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#1A1A1A',
+  },
+  unauthorizedBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600' as const,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 56 : 32,

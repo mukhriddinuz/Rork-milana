@@ -45,6 +45,7 @@ import { useOrders } from '@/contexts/OrdersContext';
 import GlobalFooter from '@/components/GlobalFooter';
 import { Language } from '@/types';
 import { FontFamily } from '@/constants/typography';
+import { isAdminEmail } from '@/utils/adminAllowlist';
 
 interface DashNavItem {
   icon: React.ReactNode;
@@ -373,7 +374,7 @@ function ProfileDashboard({
       sublabel: t('descSecurity'),
       onPress: () => {},
     },
-    {
+    ...(isAdminEmail(user?.email) ? [{
       icon: <LayoutDashboard size={20} color="#1A1A1A" />,
       label: 'Command Center',
       sublabel: 'Manage orders and inventory',
@@ -381,7 +382,7 @@ function ProfileDashboard({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         router.push('/manager' as any);
       },
-    },
+    }] : []),
     {
       icon: <LogOut size={20} color="#E53935" />,
       label: t('menuLogout'),
@@ -389,7 +390,7 @@ function ProfileDashboard({
       onPress: handleLogout,
       danger: true,
     },
-  ], [clientOrders.length, totalFavorites, router, handleLogout, t]);
+  ], [clientOrders.length, totalFavorites, router, handleLogout, t, user?.email]);
 
   // expose the modal under the dashboard
   const modal = (
