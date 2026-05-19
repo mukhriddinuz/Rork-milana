@@ -27,6 +27,7 @@ import {
   RefreshCcw,
   MapPin,
   Phone,
+  History,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -196,13 +197,57 @@ export default function ManagerDashboard() {
 
 /* ----------------------------- ORDERS PANEL ----------------------------- */
 
+interface AuditEntry {
+  id: string;
+  order_id: string;
+  changed_by: string | null;
+  changed_by_email: string | null;
+  from_status: Order['status'] | null;
+  to_status: Order['status'];
+  created_at: string;
+}
+
 function OrdersPanel() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [filter, setFilter] = useState<'all' | Order['status']>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [auditByOrder, setAuditByOrder] = useState<Record<string, AuditEntry[]>>({});
+  const [auditLoadingId, setAuditLoadingId] = useState<string | null>(null);
+
+  const fetchAudit = useCallback(async (orderId: string) => {
+    setAuditLoadingId(orderId);
+    try {
+      const { data, error } = await supabase
+        .from('order_status_audit')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('[Manager.Audit] fetch failed:', error.message);
+        return;
+      }
+      setAuditByOrder((m) => ({ ...m, [orderId]: (data ?? []) as AuditEntry[] }));
+    } catch (e) {
+      console.error('[Manager.Audit] threw:', e);
+    } finally {
+      setAuditLoadingId(null);
+    }
+  }, []);
+
+  const toggleExpanded = useCallback(
+    (orderId: string) => {
+      const next = expanded === orderId ? null : orderId;
+      setExpanded(next);
+      if (next && !auditByOrder[next]) {
+        fetchAudit(next);
+      }
+    },
+    [expanded, auditByOrder, fetchAudit],
+  );
 
   const fetchAll = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -247,6 +292,7 @@ function OrdersPanel() {
     async (orderId: string, newStatus: Order['status']) => {
       setUpdatingId(orderId);
       const prev = orders;
+      const previousStatus = prev.find((o) => o.id === orderId)?.status ?? null;
       setOrders((rows) =>
         rows.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
       );
@@ -259,8 +305,28 @@ function OrdersPanel() {
           console.error('[Manager.Orders] update status failed:', error.message);
           setOrders(prev);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-        } else {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          return;
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+
+        const { data: auditRow, error: auditErr } = await supabase
+          .from('order_status_audit')
+          .insert({
+            order_id: orderId,
+            changed_by: user?.id ?? null,
+            changed_by_email: user?.email ?? null,
+            from_status: previousStatus,
+            to_status: newStatus,
+          })
+          .select()
+          .single();
+        if (auditErr) {
+          console.error('[Manager.Audit] insert failed:', auditErr.message);
+        } else if (auditRow) {
+          setAuditByOrder((m) => ({
+            ...m,
+            [orderId]: [auditRow as AuditEntry, ...(m[orderId] ?? [])],
+          }));
         }
       } catch (e) {
         console.error('[Manager.Orders] update threw:', e);
@@ -269,7 +335,7 @@ function OrdersPanel() {
         setUpdatingId(null);
       }
     },
-    [orders],
+    [orders, user?.id, user?.email],
   );
 
   if (loading) {
@@ -328,7 +394,7 @@ function OrdersPanel() {
           return (
             <View key={order.id} style={styles.orderCard}>
               <Pressable
-                onPress={() => setExpanded(isOpen ? null : order.id)}
+                onPress={() => toggleExpanded(order.id)}
                 style={styles.orderHeader}
                 testID={`order-${order.id}`}
               >
@@ -403,6 +469,11 @@ function OrdersPanel() {
                       </Pressable>
                     ))}
                   </View>
+
+                  <AuditTimeline
+                    entries={auditByOrder[order.id]}
+                    loading={auditLoadingId === order.id}
+                  />
                 </View>
               )}
             </View>
@@ -430,6 +501,79 @@ function OrderItemRow({ item }: { item: OrderItem }) {
         </Text>
       </View>
       <Text style={styles.itemLineTotal}>{formatPrice(item.price * item.quantity)}</Text>
+    </View>
+  );
+}
+
+function formatRelative(iso: string): string {
+  try {
+    const then = new Date(iso).getTime();
+    const now = Date.now();
+    const diff = Math.max(0, now - then);
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `${d}d ago`;
+    return formatDate(iso);
+  } catch {
+    return iso;
+  }
+}
+
+function AuditTimeline({
+  entries,
+  loading,
+}: {
+  entries: AuditEntry[] | undefined;
+  loading: boolean;
+}) {
+  return (
+    <View style={styles.auditWrap}>
+      <View style={styles.auditHeader}>
+        <History size={11} color="#888888" />
+        <Text style={styles.fieldLabel}>History</Text>
+      </View>
+      {loading && !entries ? (
+        <View style={styles.auditEmpty}>
+          <ActivityIndicator size="small" color="#888888" />
+        </View>
+      ) : !entries || entries.length === 0 ? (
+        <View style={styles.auditEmpty}>
+          <Text style={styles.auditEmptyText}>No status changes yet.</Text>
+        </View>
+      ) : (
+        <View style={styles.auditList}>
+          {entries.map((e, idx) => {
+            const isLast = idx === entries.length - 1;
+            const who = e.changed_by_email ?? 'system';
+            return (
+              <View key={e.id} style={styles.auditRow}>
+                <View style={styles.auditRail}>
+                  <View style={styles.auditDot} />
+                  {!isLast ? <View style={styles.auditLine} /> : null}
+                </View>
+                <View style={{ flex: 1, paddingBottom: isLast ? 0 : 10 }}>
+                  <View style={styles.auditTransition}>
+                    {e.from_status ? (
+                      <>
+                        <Text style={styles.auditFromStatus}>{e.from_status.toUpperCase()}</Text>
+                        <Text style={styles.auditArrow}>→</Text>
+                      </>
+                    ) : null}
+                    <Text style={styles.auditToStatus}>{e.to_status.toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.auditMeta} numberOfLines={1}>
+                    {who} · {formatRelative(e.created_at)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }
@@ -1189,6 +1333,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   statusBtnTextActive: { color: '#FFFFFF' },
+
+  auditWrap: {
+    marginTop: 4,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#F0F0F0',
+    gap: 8,
+  },
+  auditHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  auditEmpty: { paddingVertical: 8, alignItems: 'flex-start' },
+  auditEmptyText: { fontSize: 11, color: '#AAAAAA', fontStyle: 'italic' as const },
+  auditList: { gap: 0 },
+  auditRow: { flexDirection: 'row', gap: 10 },
+  auditRail: { width: 10, alignItems: 'center' },
+  auditDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#1A1A1A',
+    marginTop: 5,
+  },
+  auditLine: { flex: 1, width: StyleSheet.hairlineWidth, backgroundColor: '#DDDDDD', marginTop: 2 },
+  auditTransition: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  auditFromStatus: {
+    fontSize: 9,
+    fontWeight: '600' as const,
+    letterSpacing: 1,
+    color: '#999999',
+  },
+  auditArrow: { fontSize: 11, color: '#999999' },
+  auditToStatus: {
+    fontSize: 9,
+    fontWeight: '700' as const,
+    letterSpacing: 1,
+    color: '#1A1A1A',
+  },
+  auditMeta: { fontSize: 10, color: '#888888', marginTop: 2 },
 
   invToolbar: {
     flexDirection: 'row',

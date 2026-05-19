@@ -255,3 +255,29 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_cart_user ON "cartItems"("userId");
 CREATE INDEX idx_favorites_user ON favorites("userId");
 CREATE INDEX idx_notifications_order ON notifications("orderId");
+
+-- =====================
+-- ORDER STATUS AUDIT LOG
+-- =====================
+
+CREATE TABLE order_status_audit (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  changed_by UUID,
+  changed_by_email TEXT,
+  from_status order_status,
+  to_status order_status NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_order_status_audit_order ON order_status_audit(order_id);
+CREATE INDEX idx_order_status_audit_created ON order_status_audit(created_at DESC);
+
+ALTER TABLE order_status_audit ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow read on order_status_audit"
+  ON order_status_audit FOR SELECT
+  USING (true);
+
+CREATE POLICY "Allow insert on order_status_audit"
+  ON order_status_audit FOR INSERT WITH CHECK (true);
