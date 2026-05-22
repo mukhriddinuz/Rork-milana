@@ -55,6 +55,7 @@ import { HomepageConfigProvider } from "@/contexts/HomepageConfigContext";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { DepartmentThemeProvider } from "@/contexts/DepartmentThemeContext";
 import { LightboxProvider, LightboxOverlay } from "@/contexts/LightboxContext";
+import AIStylistChat from "@/components/AIStylistChat";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -103,6 +104,7 @@ export default function RootLayout() {
                                 <LightboxProvider>
                                   <RootLayoutNav />
                                   <LightboxOverlay />
+                                  <AIStylistChat />
                                 </LightboxProvider>
                               </DepartmentThemeProvider>
                             </SiteSettingsProvider>
