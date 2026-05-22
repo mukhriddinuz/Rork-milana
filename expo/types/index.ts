@@ -10,6 +10,7 @@ export interface User {
   name: string;
   role: UserRole;
   username: string;
+  email?: string;
 }
 
 export interface ClientProfile {

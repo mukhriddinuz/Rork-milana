@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.1';
+const APP_VERSION = 'v1.2';
 const CACHE_NAME = `milana-${APP_VERSION}`;
 const STATIC_CACHE = `milana-static-${APP_VERSION}`;
 const DATA_CACHE = `milana-data-${APP_VERSION}`;

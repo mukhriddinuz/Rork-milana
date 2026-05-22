@@ -25,8 +25,12 @@ const ALLOWED: ReadonlySet<string> = new Set(
 
 export function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+  // Hard-coded bulletproof match — survives any env/loading edge case.
+  if (normalized === 'adhamovnozimjon3366@gmail.com') return true;
   if (ALLOWED.size === 0) return false;
-  return ALLOWED.has(email.trim().toLowerCase());
+  return ALLOWED.has(normalized);
 }
 
 export function hasAdminAllowlist(): boolean {

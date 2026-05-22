@@ -27,6 +27,7 @@ function mapSupabaseUser(su: SupabaseUser): User {
     name,
     role: 'client',
     username,
+    email: su.email ?? undefined,
   };
 }
 

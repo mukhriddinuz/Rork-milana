@@ -440,7 +440,9 @@ function ProfileDashboard({
           ))}
         </View>
 
-        <Text style={profileStyles.versionTag} testID="app-version">v1.1</Text>
+        <Text style={profileStyles.versionTag} testID="app-version">
+          v1.2 · Logged in as: {user?.email ?? 'NULL'} · admin={String(isAdminEmail(user?.email))}
+        </Text>
       </View>
       <GlobalFooter />
       {modal}
