@@ -15,12 +15,22 @@ export function registerServiceWorker(): void {
       });
       console.log('[PWA] Service worker registered:', registration.scope);
 
+      registration.update().catch(() => {});
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'activated') {
-              console.log('[PWA] New service worker activated');
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA] New version installed, activating...');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
             }
           });
         }

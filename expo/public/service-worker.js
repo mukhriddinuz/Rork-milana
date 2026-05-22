@@ -1,14 +1,21 @@
-const CACHE_NAME = 'milana-v1';
-const STATIC_CACHE = 'milana-static-v1';
-const DATA_CACHE = 'milana-data-v1';
+const APP_VERSION = 'v1.1';
+const CACHE_NAME = `milana-${APP_VERSION}`;
+const STATIC_CACHE = `milana-static-${APP_VERSION}`;
+const DATA_CACHE = `milana-data-${APP_VERSION}`;
 
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
 ];
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] Installing service worker', APP_VERSION);
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Pre-caching static assets');

@@ -440,6 +440,7 @@ function ProfileDashboard({
           ))}
         </View>
 
+        <Text style={profileStyles.versionTag} testID="app-version">v1.1</Text>
       </View>
       <GlobalFooter />
       {modal}
@@ -1112,7 +1113,16 @@ const profileStyles = StyleSheet.create({
     bottom: 18,
     right: 18,
   },
-
+  versionTag: {
+    fontSize: 10,
+    color: '#BBBBBB',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as const,
+    textAlign: 'center' as const,
+    marginTop: -40,
+    marginBottom: 24,
+    fontWeight: '500' as const,
+  },
 });
 
 const styles = StyleSheet.create({
