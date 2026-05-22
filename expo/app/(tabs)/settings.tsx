@@ -419,7 +419,15 @@ function ProfileDashboard({
             <Text style={profileStyles.avatarInitials}>{initials}</Text>
           </View>
           <View style={profileStyles.profileHeaderInfo}>
-            <Text style={profileStyles.profileHeaderName}>{displayName}</Text>
+            <View style={profileStyles.nameRow}>
+              <Text style={profileStyles.profileHeaderName}>{displayName}</Text>
+              {isAdminEmail(user?.email) && (
+                <View style={profileStyles.adminBadge} testID="admin-badge">
+                  <Shield size={9} color="#1A1A1A" strokeWidth={2.2} />
+                  <Text style={profileStyles.adminBadgeText}>Admin</Text>
+                </View>
+              )}
+            </View>
             <Text style={profileStyles.profileHeaderPhone}>
               {clientProfile?.phone ?? user?.username ?? ''}
             </Text>
@@ -996,6 +1004,30 @@ const profileStyles = StyleSheet.create({
   profileHeaderInfo: {
     flex: 1,
     gap: 3,
+  },
+  nameRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    flexWrap: 'wrap' as const,
+  },
+  adminBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 3,
+    backgroundColor: '#F5EFE3',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D4B98C',
+  },
+  adminBadgeText: {
+    fontSize: 9,
+    fontWeight: '700' as const,
+    color: '#1A1A1A',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as const,
   },
   profileHeaderName: {
     fontSize: 22,
