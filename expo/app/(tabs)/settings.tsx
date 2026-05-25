@@ -301,6 +301,13 @@ function ProfileDashboard({
   updatePassword: (pw: string) => Promise<{ error: string | null }>;
 }) {
   const [showChangePw, setShowChangePw] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && isAdminEmail(user?.email)) {
+      console.log('[MILANA ENV] EXPO_PUBLIC_TOOLKIT_URL =', process.env.EXPO_PUBLIC_TOOLKIT_URL);
+      console.log('[MILANA ENV] EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY =', process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY);
+    }
+  }, [user?.email]);
   const clientOrders = useMemo(
     () => orders.filter((o: any) => o.clientId === user?.id),
     [orders, user?.id],
@@ -441,8 +448,18 @@ function ProfileDashboard({
         </View>
 
         <Text style={profileStyles.versionTag} testID="app-version">
-          v1.2
+          v1.3
         </Text>
+
+        {isAdminEmail(user?.email) && (
+          <View style={profileStyles.adminEnvBox} testID="admin-env-box">
+            <Text style={profileStyles.adminEnvTitle}>ENV (admin only — copy to Vercel)</Text>
+            <Text selectable style={profileStyles.adminEnvKey}>EXPO_PUBLIC_TOOLKIT_URL</Text>
+            <Text selectable style={profileStyles.adminEnvValue}>{process.env.EXPO_PUBLIC_TOOLKIT_URL ?? '(not set)'}</Text>
+            <Text selectable style={[profileStyles.adminEnvKey, { marginTop: 8 }]}>EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY</Text>
+            <Text selectable style={profileStyles.adminEnvValue}>{process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY ?? '(not set)'}</Text>
+          </View>
+        )}
       </View>
       <GlobalFooter />
       {modal}
@@ -1124,6 +1141,37 @@ const profileStyles = StyleSheet.create({
     marginTop: -40,
     marginBottom: 24,
     fontWeight: '500' as const,
+  },
+  adminEnvBox: {
+    marginHorizontal: 16,
+    marginBottom: 32,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: '#F5EFE3',
+    borderWidth: 1,
+    borderColor: '#D4B98C',
+  },
+  adminEnvTitle: {
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as const,
+    color: '#7A6A48',
+    fontWeight: '700' as const,
+    marginBottom: 10,
+  },
+  adminEnvKey: {
+    fontSize: 10,
+    color: '#7A6A48',
+    letterSpacing: 0.8,
+    fontWeight: '600' as const,
+    fontFamily: Platform.OS === 'web' ? ('ui-monospace, Menlo, monospace' as const) : undefined,
+  },
+  adminEnvValue: {
+    fontSize: 11,
+    color: '#1A1A1A',
+    marginTop: 2,
+    fontFamily: Platform.OS === 'web' ? ('ui-monospace, Menlo, monospace' as const) : undefined,
+    ...(Platform.OS === 'web' ? ({ wordBreak: 'break-all' as any, userSelect: 'all' as any }) : {}),
   },
 });
 
