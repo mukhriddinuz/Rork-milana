@@ -302,12 +302,6 @@ function ProfileDashboard({
 }) {
   const [showChangePw, setShowChangePw] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (Platform.OS === 'web' && isAdminEmail(user?.email)) {
-      console.log('[MILANA ENV] EXPO_PUBLIC_TOOLKIT_URL =', process.env.EXPO_PUBLIC_TOOLKIT_URL);
-      console.log('[MILANA ENV] EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY =', process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY);
-    }
-  }, [user?.email]);
   const clientOrders = useMemo(
     () => orders.filter((o: any) => o.clientId === user?.id),
     [orders, user?.id],
@@ -448,18 +442,8 @@ function ProfileDashboard({
         </View>
 
         <Text style={profileStyles.versionTag} testID="app-version">
-          v1.3
+          v1.4
         </Text>
-
-        {isAdminEmail(user?.email) && (
-          <View style={profileStyles.adminEnvBox} testID="admin-env-box">
-            <Text style={profileStyles.adminEnvTitle}>ENV (admin only — copy to Vercel)</Text>
-            <Text selectable style={profileStyles.adminEnvKey}>EXPO_PUBLIC_TOOLKIT_URL</Text>
-            <Text selectable style={profileStyles.adminEnvValue}>{process.env.EXPO_PUBLIC_TOOLKIT_URL ?? '(not set)'}</Text>
-            <Text selectable style={[profileStyles.adminEnvKey, { marginTop: 8 }]}>EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY</Text>
-            <Text selectable style={profileStyles.adminEnvValue}>{process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY ?? '(not set)'}</Text>
-          </View>
-        )}
       </View>
       <GlobalFooter />
       {modal}

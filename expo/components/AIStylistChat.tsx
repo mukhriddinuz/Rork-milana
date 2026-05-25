@@ -28,8 +28,7 @@ type ApiMessage = {
   content: string;
 };
 
-const TOOLKIT_URL = process.env.EXPO_PUBLIC_TOOLKIT_URL;
-const SECRET_KEY = process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY;
+const STYLIST_ENDPOINT = '/api/stylist';
 const MODEL_ID = 'anthropic/claude-haiku-4.5';
 
 const VISIBLE_ROUTES = ['/', '/catalog', '/favorites'];
@@ -113,19 +112,6 @@ export default function AIStylistChat() {
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || sending) return;
-    if (!TOOLKIT_URL || !SECRET_KEY) {
-      setMessages((prev) => [
-        ...prev,
-        { id: `u_${Date.now()}`, role: 'user', content: text },
-        {
-          id: `a_${Date.now()}`,
-          role: 'assistant',
-          content: 'The stylist service is not yet configured. Please contact support.',
-        },
-      ]);
-      setInput('');
-      return;
-    }
 
     const userMsg: ChatMessage = { id: `u_${Date.now()}`, role: 'user', content: text };
     const nextMessages = [...messages, userMsg];
@@ -139,12 +125,9 @@ export default function AIStylistChat() {
         ...nextMessages.map<ApiMessage>((m) => ({ role: m.role, content: m.content })),
       ];
 
-      const res = await fetch(`${TOOLKIT_URL}/v2/vercel/v1/chat/completions`, {
+      const res = await fetch(STYLIST_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${SECRET_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: MODEL_ID,
           messages: apiMessages,
@@ -158,8 +141,8 @@ export default function AIStylistChat() {
         throw new Error(`HTTP ${res.status}: ${errText.slice(0, 120)}`);
       }
 
-      const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      const reply = data?.choices?.[0]?.message?.content?.trim() ?? '';
+      const data = (await res.json()) as { reply?: string };
+      const reply = data?.reply?.trim() ?? '';
 
       setMessages((prev) => [
         ...prev,
