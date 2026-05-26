@@ -2,6 +2,11 @@
   "buildCommand": "npx expo export --platform web",
   "outputDirectory": "dist",
   "framework": null,
+  "functions": {
+    "api/stylist.ts": {
+      "runtime": "@vercel/node@3.2.29"
+    }
+  },
   "rewrites": [
     {
       "source": "/((?!api/).*)",

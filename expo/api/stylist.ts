@@ -13,6 +13,8 @@
  * Falls back to the EXPO_PUBLIC_* equivalents during local dev if present.
  */
 
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 type ApiMessage = {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -49,16 +51,9 @@ function isMessage(m: unknown): m is ApiMessage {
 }
 
 export default async function handler(
-  req: { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> },
-  res: {
-    status: (code: number) => {
-      json: (data: unknown) => void;
-      end: () => void;
-    };
-    setHeader: (name: string, value: string) => void;
-  },
+  req: VercelRequest,
+  res: VercelResponse,
 ): Promise<void> {
-  // CORS — same-origin in production, but allow preflight cleanly.
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
