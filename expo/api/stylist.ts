@@ -113,6 +113,13 @@ export default async function handler(
       ? body.max_tokens
       : 400;
 
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
+  const preview = lastUserMsg?.content.slice(0, 80).replace(/\s+/g, ' ') ?? '';
+  const startedAt = Date.now();
+  console.log(
+    `[api/stylist] stylist is thinking... model=${model} msgs=${messages.length} temp=${temperature} maxTokens=${maxTokens} preview="${preview}"`,
+  );
+
   try {
     const upstream = await fetch(`${toolkitUrl}/v2/vercel/v1/chat/completions`, {
       method: 'POST',
@@ -125,7 +132,9 @@ export default async function handler(
 
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '');
-      console.error('[api/stylist] upstream', upstream.status, errText.slice(0, 200));
+      console.error(
+        `[api/stylist] upstream error status=${upstream.status} took=${Date.now() - startedAt}ms body=${errText.slice(0, 200)}`,
+      );
       res.status(502).json({ error: 'Upstream stylist service error.' });
       return;
     }
@@ -134,9 +143,12 @@ export default async function handler(
       choices?: { message?: { content?: string } }[];
     };
     const reply = data?.choices?.[0]?.message?.content?.trim() ?? '';
+    console.log(
+      `[api/stylist] reply ready took=${Date.now() - startedAt}ms chars=${reply.length}`,
+    );
     res.status(200).json({ reply });
   } catch (err) {
-    console.error('[api/stylist] fetch failed:', err);
+    console.error(`[api/stylist] fetch failed after ${Date.now() - startedAt}ms:`, err);
     res.status(500).json({ error: 'Stylist temporarily unavailable.' });
   }
 }
