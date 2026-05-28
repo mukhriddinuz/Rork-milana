@@ -7,9 +7,9 @@
  * browser bundle.
  *
  * Required server-side env vars (set in Vercel → Settings → Environment Variables):
- console.log("=== MANA MENING KALITLARIM ===");
-console.log("URL:", process.env.EXPO_PUBLIC_TOOLKIT_URL);
-console.log("SECRET:", process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY);
+ *   - TOOLKIT_URL (fallback: EXPO_PUBLIC_TOOLKIT_URL)
+ *   - RORK_TOOLKIT_SECRET_KEY (fallback: EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY)
+ */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 type ApiMessage = {
