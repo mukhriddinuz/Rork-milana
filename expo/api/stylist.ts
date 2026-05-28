@@ -7,12 +7,9 @@
  * browser bundle.
  *
  * Required server-side env vars (set in Vercel → Settings → Environment Variables):
- *   - TOOLKIT_URL                 (e.g. https://toolkit.rork.com)
- *   - RORK_TOOLKIT_SECRET_KEY     (the long token)
- *
- * Falls back to the EXPO_PUBLIC_* equivalents during local dev if present.
- */
-
+ console.log("=== MANA MENING KALITLARIM ===");
+console.log("URL:", process.env.EXPO_PUBLIC_TOOLKIT_URL);
+console.log("SECRET:", process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY);
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 type ApiMessage = {
