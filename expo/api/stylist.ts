@@ -113,13 +113,15 @@ export default async function handler(
   );
 
   try {
-    const upstream = await fetch(`${toolkitUrl}/v2/vercel/v1/chat/completions`, {
+    const cleanBase = toolkitUrl.replace(/\/$/, '');
+    const upstream = await fetch(`${cleanBase}/llm/text`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${secretKey}`,
+        'x-rork-toolkit-secret': secretKey,
       },
-      body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
+      body: JSON.stringify({ messages }),
     });
 
     if (!upstream.ok) {
@@ -131,10 +133,8 @@ export default async function handler(
       return;
     }
 
-    const data = (await upstream.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const reply = data?.choices?.[0]?.message?.content?.trim() ?? '';
+    const data = (await upstream.json()) as { completion?: string };
+    const reply = (data?.completion ?? '').trim();
     console.log(
       `[api/stylist] reply ready took=${Date.now() - startedAt}ms chars=${reply.length}`,
     );
