@@ -57,11 +57,6 @@ function buildSystemPrompt(catalogue: string): string {
 export default function AIStylistChat() {
   const pathname = usePathname();
   const { products } = useProducts();
-  // === XAKERLIK KODI BOSHLANDI ===
-  console.log("=== MANA KALITLAR ===");
-  console.log("URL:", process.env.EXPO_PUBLIC_TOOLKIT_URL);
-  console.log("SECRET:", process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY);
-  // === XAKERLIK KODI TUGADI ===
   const [open, setOpen] = useState<boolean>(false);
   const [input, setInput] = useState<string>('');
   const [sending, setSending] = useState<boolean>(false);
