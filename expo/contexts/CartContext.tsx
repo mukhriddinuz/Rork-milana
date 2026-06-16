@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { CartItem } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY = 'milana_cart';
 
@@ -19,7 +20,7 @@ export const [CartProvider, useCart] = createContextHook(() => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (e) {
-      console.log('[Cart] persist local failed:', e);
+      logger.log('[Cart] persist local failed:', e);
     }
   }, []);
 
@@ -33,7 +34,7 @@ export const [CartProvider, useCart] = createContextHook(() => {
           setItems(local);
         }
       } catch (e) {
-        console.log('[Cart] local hydrate failed:', e);
+        logger.log('[Cart] local hydrate failed:', e);
       } finally {
         if (!userId) setIsLoading(false);
       }
@@ -54,51 +55,51 @@ export const [CartProvider, useCart] = createContextHook(() => {
             const localItems: CartItem[] = stored ? JSON.parse(stored) : [];
             if (localItems.length > 0) {
               const { data: existing, error: exErr } = await supabase
-                .from('cartItems')
-                .select('productId, quantity')
-                .eq('userId', userId);
-              if (exErr) console.log('[Cart] merge fetch error:', exErr.message);
+                .from('cart_items')
+                .select('product_id, quantity')
+                .eq('user_id', userId);
+              if (exErr) logger.log('[Cart] merge fetch error:', exErr.message);
               const existingMap = new Map<string, number>(
-                (existing ?? []).map((r: { productId: string; quantity: number }) => [
-                  r.productId,
+                (existing ?? []).map((r: { product_id: string; quantity: number }) => [
+                  r.product_id,
                   r.quantity,
                 ]),
               );
               const rows = localItems.map((it) => ({
-                userId,
-                productId: it.productId,
+                user_id: userId,
+                product_id: it.productId,
                 quantity: it.quantity + (existingMap.get(it.productId) ?? 0),
               }));
               const { error: upErr } = await supabase
-                .from('cartItems')
-                .upsert(rows, { onConflict: 'userId,productId' });
-              if (upErr) console.log('[Cart] merge upsert error:', upErr.message);
+                .from('cart_items')
+                .upsert(rows, { onConflict: 'user_id,product_id' });
+              if (upErr) logger.log('[Cart] merge upsert error:', upErr.message);
               await AsyncStorage.removeItem(STORAGE_KEY);
             }
           } catch (e) {
-            console.log('[Cart] merge failed:', e);
+            logger.log('[Cart] merge failed:', e);
           }
           mergedForUser.current = userId;
         }
 
         const { data, error } = await supabase
-          .from('cartItems')
-          .select('productId, quantity')
-          .eq('userId', userId);
+          .from('cart_items')
+          .select('product_id, quantity')
+          .eq('user_id', userId);
         if (error) {
-          console.log('[Cart] fetch error:', error.message);
+          logger.log('[Cart] fetch error:', error.message);
           return;
         }
         if (cancelled) return;
         const mapped: CartItem[] = (data ?? []).map(
-          (r: { productId: string; quantity: number }) => ({
-            productId: r.productId,
+          (r: { product_id: string; quantity: number }) => ({
+            productId: r.product_id,
             quantity: r.quantity,
           }),
         );
         setItems(mapped);
       } catch (e) {
-        console.log('[Cart] fetch failed:', e);
+        logger.log('[Cart] fetch failed:', e);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -114,14 +115,14 @@ export const [CartProvider, useCart] = createContextHook(() => {
       if (!userId) return;
       try {
         const { error } = await supabase
-          .from('cartItems')
+          .from('cart_items')
           .upsert(
-            { userId, productId, quantity },
-            { onConflict: 'userId,productId' },
+            { user_id: userId, product_id: productId, quantity },
+            { onConflict: 'user_id,product_id' },
           );
-        if (error) console.log('[Cart] upsert error:', error.message);
+        if (error) logger.log('[Cart] upsert error:', error.message);
       } catch (e) {
-        console.log('[Cart] upsert failed:', e);
+        logger.log('[Cart] upsert failed:', e);
       }
     },
     [userId],
@@ -132,13 +133,13 @@ export const [CartProvider, useCart] = createContextHook(() => {
       if (!userId) return;
       try {
         const { error } = await supabase
-          .from('cartItems')
+          .from('cart_items')
           .delete()
-          .eq('userId', userId)
-          .eq('productId', productId);
-        if (error) console.log('[Cart] delete error:', error.message);
+          .eq('user_id', userId)
+          .eq('product_id', productId);
+        if (error) logger.log('[Cart] delete error:', error.message);
       } catch (e) {
-        console.log('[Cart] delete failed:', e);
+        logger.log('[Cart] delete failed:', e);
       }
     },
     [userId],
@@ -200,7 +201,7 @@ export const [CartProvider, useCart] = createContextHook(() => {
         } else {
           persistLocal(updated);
         }
-        console.log('[Cart] Removed item completely', productId);
+        logger.log('[Cart] Removed item completely', productId);
         return updated;
       });
     },
@@ -213,18 +214,18 @@ export const [CartProvider, useCart] = createContextHook(() => {
       (async () => {
         try {
           const { error } = await supabase
-            .from('cartItems')
+            .from('cart_items')
             .delete()
-            .eq('userId', userId);
-          if (error) console.log('[Cart] clear error:', error.message);
+            .eq('user_id', userId);
+          if (error) logger.log('[Cart] clear error:', error.message);
         } catch (e) {
-          console.log('[Cart] clear failed:', e);
+          logger.log('[Cart] clear failed:', e);
         }
       })();
     } else {
       persistLocal([]);
     }
-    console.log('[Cart] Cleared');
+    logger.log('[Cart] Cleared');
   }, [userId, persistLocal]);
 
   const getQuantity = useCallback(

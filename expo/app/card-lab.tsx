@@ -171,7 +171,7 @@ export default function CardLabScreen() {
 
           <View style={styles.controlsWrap}>
             {groups.map((g) => (
-              <ControlRow key={g.id} group={g} />
+              <ControlRow key={g.id} group={g as ControlGroup<string>} />
             ))}
           </View>
 

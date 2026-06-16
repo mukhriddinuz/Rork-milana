@@ -120,7 +120,7 @@ export default function ClientsScreen() {
 
   const handleCopyCredentials = useCallback(async (client: ClientProfile) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const text = `Login: ${client.username}\nPassword: ${client.password}`;
+    const text = `Login: ${client.username}\nPassword: ${client.password ?? '—'}`;
     await Clipboard.setStringAsync(text);
     Alert.alert('✓', t('credentialsCopied'));
   }, [t]);

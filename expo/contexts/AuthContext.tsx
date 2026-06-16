@@ -8,6 +8,7 @@ import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { User, Language } from '@/types';
 import { translations } from '@/constants/translations';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
 
 /**
  * Map a Supabase auth user to our local `User` shape so the rest of the app
@@ -63,17 +64,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     (async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        if (error) console.log('[Auth] getSession error:', error.message);
+        if (error) logger.log('[Auth] getSession error:', error.message);
         applySession(data?.session ?? null);
       } catch (e) {
-        console.log('[Auth] getSession failed:', e);
+        logger.log('[Auth] getSession failed:', e);
       } finally {
         if (mountedRef.current) setAuthReady(true);
       }
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] state change:', event);
+      logger.log('[Auth] state change:', event);
       if (event === 'SIGNED_OUT') {
         setUser(null);
         return;
@@ -102,7 +103,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         options: { data: metadata ?? {} },
       });
       if (error) {
-        console.log('[Auth] signUp error:', error.message);
+        logger.log('[Auth] signUp error:', error.message);
         return { user: null, error: error.message };
       }
       const mapped = data.user ? mapSupabaseUser(data.user) : null;
@@ -120,7 +121,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     ): Promise<{ user: User | null; error: string | null }> => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        console.log('[Auth] signIn error:', error.message);
+        logger.log('[Auth] signIn error:', error.message);
         return { user: null, error: error.message };
       }
       const mapped = data.user ? mapSupabaseUser(data.user) : null;
@@ -141,14 +142,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           redirectTo = Linking.createURL('update-password');
         }
       } catch (e) {
-        console.log('[Auth] redirectTo build failed:', e);
+        logger.log('[Auth] redirectTo build failed:', e);
       }
       const { error } = await supabase.auth.resetPasswordForEmail(
         email,
         redirectTo ? { redirectTo } : undefined,
       );
       if (error) {
-        console.log('[Auth] resetPasswordForEmail error:', error.message);
+        logger.log('[Auth] resetPasswordForEmail error:', error.message);
         return { error: error.message };
       }
       return { error: null };
@@ -161,7 +162,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     async (newPassword: string): Promise<{ error: string | null }> => {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) {
-        console.log('[Auth] updatePassword error:', error.message);
+        logger.log('[Auth] updatePassword error:', error.message);
         return { error: error.message };
       }
       return { error: null };
@@ -172,7 +173,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   /** Real Supabase sign out. */
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) console.log('[Auth] signOut error:', error.message);
+    if (error) logger.log('[Auth] signOut error:', error.message);
     setUser(null);
   }, []);
 

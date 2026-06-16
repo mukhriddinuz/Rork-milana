@@ -1,38 +1,145 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { ClientProfile, ClientStatus } from '@/types';
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
+
+/**
+ * Client directory, backed by the Supabase `profiles` table.
+ *
+ * Self-registered customers get a profile automatically (DB trigger on
+ * auth signup). Staff can also create directory entries and adjust VIP
+ * status. Credentials are owned by Supabase Auth — never stored here.
+ */
+
+type ProfileRow = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  location: string | null;
+  phone: string | null;
+  messenger_link: string | null;
+  username: string | null;
+  client_status: ClientStatus;
+  created_by: 'self' | 'accountant';
+  created_at: string;
+};
+
+const CLIENTS_KEY = ['clients'] as const;
 
 function generateUsername(firstName: string): string {
   return firstName.trim().toLowerCase();
 }
 
+function mapRow(row: ProfileRow): ClientProfile {
+  return {
+    id: row.id,
+    firstName: row.first_name ?? '',
+    lastName: row.last_name ?? '',
+    location: row.location ?? '',
+    phone: row.phone ?? '',
+    messengerLink: row.messenger_link ?? undefined,
+    username: row.username ?? '',
+    clientStatus: row.client_status ?? 'standard',
+    createdAt: row.created_at,
+    createdBy: row.created_by ?? 'self',
+  };
+}
+
 export const [ClientsProvider, useClients] = createContextHook(() => {
-  const [clients, setClients] = useState<ClientProfile[]>([]);
-  const initialized = useRef(false);
+  const queryClient = useQueryClient();
 
   const clientsQuery = useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      const stored = await AsyncStorage.getItem('milana_clients');
-      return stored ? (JSON.parse(stored) as ClientProfile[]) : [];
+    queryKey: CLIENTS_KEY,
+    queryFn: async (): Promise<ClientProfile[]> => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        logger.error('[Clients] Fetch failed:', error.message);
+        throw error;
+      }
+      return (data ?? []).map((r) => mapRow(r as ProfileRow));
     },
   });
 
-  useEffect(() => {
-    if (clientsQuery.data && !initialized.current) {
-      setClients(clientsQuery.data);
-      initialized.current = true;
-    }
-  }, [clientsQuery.data]);
+  const clients = useMemo(() => clientsQuery.data ?? [], [clientsQuery.data]);
 
-  const syncMutation = useMutation({
-    mutationFn: async (updated: ClientProfile[]) => {
-      await AsyncStorage.setItem('milana_clients', JSON.stringify(updated));
-      return updated;
+  const setCache = useCallback(
+    (updater: (prev: ClientProfile[]) => ClientProfile[]) => {
+      queryClient.setQueryData<ClientProfile[]>(CLIENTS_KEY, (prev) => updater(prev ?? []));
     },
+    [queryClient],
+  );
+
+  const insertMutation = useMutation({
+    mutationFn: async (row: Record<string, unknown>) => {
+      const { data, error } = await supabase.from('profiles').insert(row).select('*').single();
+      if (error) throw error;
+      return mapRow(data as ProfileRow);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CLIENTS_KEY }),
   });
+
+  const createClient = useCallback(
+    (
+      data: {
+        firstName: string;
+        lastName: string;
+        location: string;
+        phone: string;
+        password?: string;
+        messengerLink?: string;
+        clientStatus?: ClientStatus;
+      },
+      createdBy: 'self' | 'accountant',
+    ): ClientProfile => {
+      const username = generateUsername(data.firstName);
+      const optimistic: ClientProfile = {
+        id: `tmp_${Date.now()}`,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        location: data.location,
+        phone: data.phone,
+        messengerLink: data.messengerLink,
+        username,
+        password: data.password,
+        clientStatus: data.clientStatus ?? 'standard',
+        createdAt: new Date().toISOString(),
+        createdBy,
+      };
+      setCache((prev) => [optimistic, ...prev]);
+      insertMutation.mutate(
+        {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          location: data.location,
+          phone: data.phone,
+          messenger_link: data.messengerLink ?? null,
+          username,
+          client_status: data.clientStatus ?? 'standard',
+          created_by: createdBy,
+        },
+        {
+          onSuccess: (saved) => {
+            // Keep the just-entered password transiently for the hand-off UI.
+            setCache((prev) => [
+              { ...saved, password: data.password },
+              ...prev.filter((c) => c.id !== optimistic.id),
+            ]);
+          },
+          onError: (err) => {
+            logger.error('[Clients] Create failed:', err);
+            setCache((prev) => prev.filter((c) => c.id !== optimistic.id));
+          },
+        },
+      );
+      return optimistic;
+    },
+    [insertMutation, setCache],
+  );
 
   const registerClient = useCallback(
     (data: {
@@ -42,28 +149,8 @@ export const [ClientsProvider, useClients] = createContextHook(() => {
       phone: string;
       password: string;
       messengerLink?: string;
-    }): ClientProfile => {
-      const username = generateUsername(data.firstName);
-      const newClient: ClientProfile = {
-        id: `client_${Date.now()}`,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        location: data.location,
-        phone: data.phone,
-        messengerLink: data.messengerLink,
-        username,
-        password: data.password,
-        clientStatus: 'standard',
-        createdAt: new Date().toISOString(),
-        createdBy: 'self',
-      };
-      const updated = [newClient, ...clients];
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Registered client:', newClient.id, newClient.username);
-      return newClient;
-    },
-    [clients, syncMutation],
+    }) => createClient(data, 'self'),
+    [createClient],
   );
 
   const addClientByAccountant = useCallback(
@@ -75,117 +162,79 @@ export const [ClientsProvider, useClients] = createContextHook(() => {
       password: string;
       messengerLink?: string;
       clientStatus?: ClientStatus;
-    }): ClientProfile => {
-      const username = generateUsername(data.firstName);
-      const newClient: ClientProfile = {
-        id: `client_${Date.now()}`,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        location: data.location,
-        phone: data.phone,
-        messengerLink: data.messengerLink,
-        username,
-        password: data.password,
-        clientStatus: data.clientStatus ?? 'standard',
-        createdAt: new Date().toISOString(),
-        createdBy: 'accountant',
-      };
-      const updated = [newClient, ...clients];
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Accountant added client:', newClient.id);
-      return newClient;
-    },
-    [clients, syncMutation],
+    }) => createClient(data, 'accountant'),
+    [createClient],
   );
 
   const getClientById = useCallback(
-    (id: string): ClientProfile | undefined => {
-      return clients.find((c) => c.id === id);
-    },
-    [clients],
-  );
-
-  const findClientByCredentials = useCallback(
-    (username: string, password: string): ClientProfile | undefined => {
-      const normalizedInput = username.trim().toLowerCase();
-      return clients.find(
-        (c) => c.username.toLowerCase() === normalizedInput && c.password === password,
-      );
-    },
+    (id: string): ClientProfile | undefined => clients.find((c) => c.id === id),
     [clients],
   );
 
   const updateClientStatus = useCallback(
     (id: string, status: ClientStatus) => {
-      const updated = clients.map((c) =>
-        c.id === id ? { ...c, clientStatus: status } : c,
-      );
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Updated client status:', id, status);
+      setCache((prev) => prev.map((c) => (c.id === id ? { ...c, clientStatus: status } : c)));
+      (async () => {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ client_status: status })
+          .eq('id', id);
+        if (error) logger.error('[Clients] Update status failed:', error.message);
+      })();
     },
-    [clients, syncMutation],
+    [setCache],
   );
 
   const updateClientProfile = useCallback(
-    (id: string, data: { firstName?: string; lastName?: string; location?: string; messengerLink?: string }) => {
-      const updated = clients.map((c) => {
-        if (c.id !== id) return c;
-        return {
-          ...c,
-          ...(data.firstName !== undefined && { firstName: data.firstName }),
-          ...(data.lastName !== undefined && { lastName: data.lastName }),
-          ...(data.location !== undefined && { location: data.location }),
-          ...(data.messengerLink !== undefined && { messengerLink: data.messengerLink }),
-        };
-      });
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Updated client profile:', id);
-    },
-    [clients, syncMutation],
-  );
-
-  const changeClientPassword = useCallback(
-    (id: string, oldPassword: string, newPassword: string): boolean => {
-      const client = clients.find((c) => c.id === id);
-      if (!client || client.password !== oldPassword) {
-        console.log('[Clients] Password change failed - wrong old password for:', id);
-        return false;
-      }
-      const updated = clients.map((c) =>
-        c.id === id ? { ...c, password: newPassword } : c,
+    (
+      id: string,
+      data: { firstName?: string; lastName?: string; location?: string; messengerLink?: string },
+    ) => {
+      setCache((prev) =>
+        prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                ...(data.firstName !== undefined && { firstName: data.firstName }),
+                ...(data.lastName !== undefined && { lastName: data.lastName }),
+                ...(data.location !== undefined && { location: data.location }),
+                ...(data.messengerLink !== undefined && { messengerLink: data.messengerLink }),
+              }
+            : c,
+        ),
       );
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Password changed for client:', id);
-      return true;
+      const row: Record<string, unknown> = {};
+      if (data.firstName !== undefined) row.first_name = data.firstName;
+      if (data.lastName !== undefined) row.last_name = data.lastName;
+      if (data.location !== undefined) row.location = data.location;
+      if (data.messengerLink !== undefined) row.messenger_link = data.messengerLink;
+      (async () => {
+        const { error } = await supabase.from('profiles').update(row).eq('id', id);
+        if (error) logger.error('[Clients] Update profile failed:', error.message);
+      })();
     },
-    [clients, syncMutation],
-  );
-
-  const resetClientPassword = useCallback(
-    (id: string, newPassword: string) => {
-      const updated = clients.map((c) =>
-        c.id === id ? { ...c, password: newPassword } : c,
-      );
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Password reset by accountant for client:', id);
-    },
-    [clients, syncMutation],
+    [setCache],
   );
 
   const deleteClient = useCallback(
     (id: string) => {
-      const updated = clients.filter((c) => c.id !== id);
-      setClients(updated);
-      syncMutation.mutate(updated);
-      console.log('[Clients] Deleted client:', id);
+      setCache((prev) => prev.filter((c) => c.id !== id));
+      (async () => {
+        const { error } = await supabase.from('profiles').delete().eq('id', id);
+        if (error) logger.error('[Clients] Delete failed:', error.message);
+      })();
     },
-    [clients, syncMutation],
+    [setCache],
   );
+
+  // Password resets for other accounts require the service role and must
+  // run in a trusted environment (Supabase edge function), not the client.
+  const resetClientPassword = useCallback((id: string, _newPassword: string) => {
+    logger.warn(
+      '[Clients] resetClientPassword requires a server-side admin function; ignored on client for',
+      id,
+    );
+  }, []);
 
   const clientCount = useMemo(() => clients.length, [clients]);
 
@@ -194,9 +243,7 @@ export const [ClientsProvider, useClients] = createContextHook(() => {
     registerClient,
     addClientByAccountant,
     getClientById,
-    findClientByCredentials,
     updateClientProfile,
-    changeClientPassword,
     resetClientPassword,
     deleteClient,
     updateClientStatus,

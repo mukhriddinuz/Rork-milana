@@ -4,6 +4,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { Order, OrderItem } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 interface CreateOrderInput {
   items: OrderItem[];
@@ -74,7 +75,7 @@ export const [OrdersProvider, useOrders] = createContextHook(() => {
         const stored = await AsyncStorage.getItem('milana_seen_orders');
         if (stored) setSeenOrderIds(JSON.parse(stored) as string[]);
       } catch (e) {
-        console.log('[Orders] seen hydrate failed:', e);
+        logger.log('[Orders] seen hydrate failed:', e);
       } finally {
         seenInitialized.current = true;
       }
@@ -97,14 +98,14 @@ export const [OrdersProvider, useOrders] = createContextHook(() => {
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
         if (error) {
-          console.error('[Orders] Fetch failed:', error.message);
+          logger.error('[Orders] Fetch failed:', error.message);
           return;
         }
         if (cancelled) return;
         const mapped = (data ?? []).map((r) => mapRowToOrder(r as OrderRow));
         setOrders(mapped);
       } catch (e) {
-        console.error('[Orders] Fetch threw:', e);
+        logger.error('[Orders] Fetch threw:', e);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -141,7 +142,7 @@ export const [OrdersProvider, useOrders] = createContextHook(() => {
           .single();
 
         if (orderErr || !orderData) {
-          console.error('[Orders] Insert order failed:', orderErr?.message);
+          logger.error('[Orders] Insert order failed:', orderErr?.message);
           return { order: null, error: orderErr?.message ?? 'Order insert failed' };
         }
 
@@ -160,7 +161,7 @@ export const [OrdersProvider, useOrders] = createContextHook(() => {
           .insert(itemRows);
 
         if (itemsErr) {
-          console.error('[Orders] Insert order_items failed:', itemsErr.message);
+          logger.error('[Orders] Insert order_items failed:', itemsErr.message);
           // best-effort: rollback the order so we don't leave a header without lines.
           await supabase.from('orders').delete().eq('id', (orderData as { id: string }).id);
           return { order: null, error: itemsErr.message };
@@ -180,11 +181,11 @@ export const [OrdersProvider, useOrders] = createContextHook(() => {
         });
         setOrders((prev) => [newOrder, ...prev]);
         setToastMessage('newOrderNotification');
-        console.log('[Orders] Created order:', newOrder.id);
+        logger.log('[Orders] Created order:', newOrder.id);
         return { order: newOrder, error: null };
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
-        console.error('[Orders] createOrder threw:', msg);
+        logger.error('[Orders] createOrder threw:', msg);
         return { order: null, error: msg };
       }
     },

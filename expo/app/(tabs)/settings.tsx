@@ -590,7 +590,7 @@ export default function SettingsScreen() {
             style={[styles.langRow, styles.langRowBorder]}
           >
             <Globe size={16} color={Colors.textSecondary} />
-            <Text style={styles.langText}>O'zbekcha</Text>
+            <Text style={styles.langText}>O&apos;zbekcha</Text>
             <View style={[styles.radio, language === 'uz' && styles.radioActive]}>
               {language === 'uz' && <View style={styles.radioDot} />}
             </View>

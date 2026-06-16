@@ -21,7 +21,12 @@ export interface ClientProfile {
   phone: string;
   messengerLink?: string;
   username: string;
-  password: string;
+  /**
+   * Transient only. Credentials live in Supabase Auth, never in the
+   * profiles table. This is populated just after an accountant creates
+   * a client so the staff UI can hand the password off once.
+   */
+  password?: string;
   clientStatus: ClientStatus;
   createdAt: string;
   createdBy: 'self' | 'accountant';

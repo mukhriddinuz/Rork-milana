@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     color: '#000000',
     letterSpacing: 1,
-    whiteSpace: 'nowrap' as any,
+    ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : {}),
     fontFamily: Platform.select({
       web: 'Futura, "Futura-Medium", "Futura PT", "Trebuchet MS", "Century Gothic", "Avenir Next", Arial, sans-serif',
       ios: 'Futura-Medium',

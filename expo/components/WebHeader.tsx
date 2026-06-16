@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     color: '#000000',
     letterSpacing: 1.5,
     textTransform: 'uppercase' as const,
-    whiteSpace: 'nowrap' as any,
+    ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : {}),
     fontFamily: Platform.select({
       web: 'Futura, "Futura-Medium", "Futura PT", "Trebuchet MS", "Century Gothic", "Avenir Next", Arial, sans-serif',
       ios: 'Futura-Medium',

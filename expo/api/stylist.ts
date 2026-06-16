@@ -28,14 +28,43 @@ const DEFAULT_MODEL = 'anthropic/claude-haiku-4.5';
 const MAX_MESSAGES = 40;
 const MAX_CONTENT_LENGTH = 4000;
 
-function getEnv(name: string, fallback?: string): string | undefined {
-  const v = process.env[name];
-  if (v && v.length > 0) return v;
-  if (fallback) {
-    const fb = process.env[fallback];
-    if (fb && fb.length > 0) return fb;
+// Simple in-memory rate limit. Serverless instances are short-lived, so
+// this throttles bursts per warm instance rather than enforcing a global
+// quota — good enough to blunt obvious abuse without external state.
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 20;
+const hits = new Map<string, { count: number; resetAt: number }>();
+
+function allowedOrigins(): string[] {
+  return (process.env.STYLIST_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+}
+
+function resolveOrigin(reqOrigin: string | undefined): string {
+  const allow = allowedOrigins();
+  if (allow.length === 0) return '*';
+  if (reqOrigin && allow.includes(reqOrigin)) return reqOrigin;
+  return allow[0];
+}
+
+function clientIp(req: VercelRequest): string {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0].trim();
+  if (Array.isArray(fwd) && fwd.length > 0) return fwd[0];
+  return 'unknown';
+}
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || now > entry.resetAt) {
+    hits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
   }
-  return undefined;
+  entry.count += 1;
+  return entry.count > RATE_LIMIT_MAX;
 }
 
 function isMessage(m: unknown): m is ApiMessage {
@@ -51,7 +80,9 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const reqOrigin = typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+  res.setHeader('Access-Control-Allow-Origin', resolveOrigin(reqOrigin));
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -65,8 +96,14 @@ export default async function handler(
     return;
   }
 
-  const toolkitUrl = getEnv('TOOLKIT_URL', 'EXPO_PUBLIC_TOOLKIT_URL');
-  const secretKey = getEnv('RORK_TOOLKIT_SECRET_KEY', 'EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY');
+  if (rateLimited(clientIp(req))) {
+    res.status(429).json({ error: 'Too many requests. Please slow down.' });
+    return;
+  }
+
+  const toolkitUrl = process.env.TOOLKIT_URL || process.env.EXPO_PUBLIC_TOOLKIT_URL;
+  const secretKey =
+    process.env.RORK_TOOLKIT_SECRET_KEY || process.env.EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY;
 
   if (!toolkitUrl || !secretKey) {
     console.error('[api/stylist] missing TOOLKIT_URL or RORK_TOOLKIT_SECRET_KEY env');

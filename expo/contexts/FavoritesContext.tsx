@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 const STORAGE_KEY = 'milana_favorites';
 
@@ -19,7 +20,7 @@ export const [FavoritesProvider, useFavorites] = createContextHook(() => {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
     } catch (e) {
-      console.log('[Favorites] persist local failed:', e);
+      logger.log('[Favorites] persist local failed:', e);
     }
   }, []);
 
@@ -34,7 +35,7 @@ export const [FavoritesProvider, useFavorites] = createContextHook(() => {
         }
         hydratedLocal.current = true;
       } catch (e) {
-        console.log('[Favorites] local hydrate failed:', e);
+        logger.log('[Favorites] local hydrate failed:', e);
       } finally {
         if (!userId) setIsLoading(false);
       }
@@ -55,32 +56,32 @@ export const [FavoritesProvider, useFavorites] = createContextHook(() => {
             const stored = await AsyncStorage.getItem(STORAGE_KEY);
             const localIds = stored ? (JSON.parse(stored) as string[]) : [];
             if (localIds.length > 0) {
-              const rows = localIds.map((pid) => ({ userId, productId: pid }));
+              const rows = localIds.map((pid) => ({ user_id: userId, product_id: pid }));
               const { error: upErr } = await supabase
                 .from('favorites')
-                .upsert(rows, { onConflict: 'userId,productId', ignoreDuplicates: true });
-              if (upErr) console.log('[Favorites] merge upsert error:', upErr.message);
+                .upsert(rows, { onConflict: 'user_id,product_id', ignoreDuplicates: true });
+              if (upErr) logger.log('[Favorites] merge upsert error:', upErr.message);
               await AsyncStorage.removeItem(STORAGE_KEY);
             }
           } catch (e) {
-            console.log('[Favorites] merge failed:', e);
+            logger.log('[Favorites] merge failed:', e);
           }
           mergedForUser.current = userId;
         }
 
         const { data, error } = await supabase
           .from('favorites')
-          .select('productId')
-          .eq('userId', userId);
+          .select('product_id')
+          .eq('user_id', userId);
         if (error) {
-          console.log('[Favorites] fetch error:', error.message);
+          logger.log('[Favorites] fetch error:', error.message);
           return;
         }
         if (cancelled) return;
-        const ids = (data ?? []).map((r: { productId: string }) => r.productId);
+        const ids = (data ?? []).map((r: { product_id: string }) => r.product_id);
         setFavoriteIds(ids);
       } catch (e) {
-        console.log('[Favorites] fetch failed:', e);
+        logger.log('[Favorites] fetch failed:', e);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -106,23 +107,23 @@ export const [FavoritesProvider, useFavorites] = createContextHook(() => {
                 const { error } = await supabase
                   .from('favorites')
                   .delete()
-                  .eq('userId', userId)
-                  .eq('productId', productId);
-                if (error) console.log('[Favorites] delete error:', error.message);
+                  .eq('user_id', userId)
+                  .eq('product_id', productId);
+                if (error) logger.log('[Favorites] delete error:', error.message);
               } else {
                 const { error } = await supabase
                   .from('favorites')
-                  .insert({ userId, productId });
-                if (error) console.log('[Favorites] insert error:', error.message);
+                  .insert({ user_id: userId, product_id: productId });
+                if (error) logger.log('[Favorites] insert error:', error.message);
               }
             } catch (e) {
-              console.log('[Favorites] toggle sync failed:', e);
+              logger.log('[Favorites] toggle sync failed:', e);
             }
           })();
         } else {
           persistLocal(updated);
         }
-        console.log('[Favorites]', exists ? 'Removed' : 'Added', productId);
+        logger.log('[Favorites]', exists ? 'Removed' : 'Added', productId);
         return updated;
       });
     },

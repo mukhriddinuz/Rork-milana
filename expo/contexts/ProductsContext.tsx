@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 import { Product } from '@/types';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
 
 type ProductRow = {
   id: string;
@@ -23,6 +24,8 @@ type ProductRow = {
   description?: string | null;
 };
 
+const PRODUCTS_KEY = ['products'] as const;
+
 const mapRowToProduct = (row: ProductRow): Product => ({
   id: row.id,
   modelNumber: row.model_number,
@@ -42,9 +45,7 @@ const mapRowToProduct = (row: ProductRow): Product => ({
   description: row.description ?? undefined,
 });
 
-const mapProductToRow = (
-  product: Partial<Product>,
-): Record<string, unknown> => {
+const mapProductToRow = (product: Partial<Product>): Record<string, unknown> => {
   const row: Record<string, unknown> = {};
   if (product.modelNumber !== undefined) row.model_number = product.modelNumber;
   if (product.variantNumber !== undefined) row.variant_number = product.variantNumber;
@@ -64,31 +65,34 @@ const mapProductToRow = (
 };
 
 export const [ProductsProvider, useProducts] = createContextHook(() => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const initialized = useRef(false);
   const queryClient = useQueryClient();
 
+  // React Query is the single source of truth. Optimistic updates write
+  // straight into the cache so a later refetch (focus, invalidate, another
+  // admin's change) always reconciles instead of going stale.
   const productsQuery = useQuery({
-    queryKey: ['products'],
+    queryKey: PRODUCTS_KEY,
     queryFn: async (): Promise<Product[]> => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) {
-        console.error('[Products] Fetch failed:', error.message);
-        return [];
+        logger.error('[Products] Fetch failed:', error.message);
+        throw error;
       }
       return (data ?? []).map((r) => mapRowToProduct(r as ProductRow));
     },
   });
 
-  useEffect(() => {
-    if (productsQuery.data && !initialized.current) {
-      setProducts(productsQuery.data);
-      initialized.current = true;
-    }
-  }, [productsQuery.data]);
+  const products = useMemo(() => productsQuery.data ?? [], [productsQuery.data]);
+
+  const setCache = useCallback(
+    (updater: (prev: Product[]) => Product[]) => {
+      queryClient.setQueryData<Product[]>(PRODUCTS_KEY, (prev) => updater(prev ?? []));
+    },
+    [queryClient],
+  );
 
   const addMutation = useMutation({
     mutationFn: async (product: Omit<Product, 'id' | 'createdAt'>) => {
@@ -100,7 +104,7 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
       if (error) throw error;
       return mapRowToProduct(data as ProductRow);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }),
   });
 
   const updateMutation = useMutation({
@@ -109,7 +113,7 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
       const { error } = await supabase.from('products').update(mapProductToRow(rest)).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }),
   });
 
   const deleteMutation = useMutation({
@@ -117,7 +121,7 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PRODUCTS_KEY }),
   });
 
   const addProduct = useCallback(
@@ -127,43 +131,50 @@ export const [ProductsProvider, useProducts] = createContextHook(() => {
         id: `tmp_${Date.now()}`,
         createdAt: new Date().toISOString(),
       };
-      setProducts((prev) => [optimistic, ...prev]);
+      setCache((prev) => [optimistic, ...prev]);
       addMutation.mutate(product, {
         onSuccess: (saved) => {
-          setProducts((prev) => [saved, ...prev.filter((p) => p.id !== optimistic.id)]);
+          setCache((prev) => [saved, ...prev.filter((p) => p.id !== optimistic.id)]);
         },
         onError: (err) => {
-          console.error('[Products] Add failed:', err);
-          setProducts((prev) => prev.filter((p) => p.id !== optimistic.id));
+          logger.error('[Products] Add failed:', err);
+          setCache((prev) => prev.filter((p) => p.id !== optimistic.id));
         },
       });
-      console.log('[Products] Added:', optimistic.modelNumber);
       return optimistic;
     },
-    [addMutation],
+    [addMutation, setCache],
   );
 
   const updateProduct = useCallback(
     (id: string, updates: Partial<Product>) => {
-      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+      const snapshot = queryClient.getQueryData<Product[]>(PRODUCTS_KEY) ?? [];
+      setCache((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
       updateMutation.mutate(
         { id, updates },
-        { onError: (err) => console.error('[Products] Update failed:', err) },
+        {
+          onError: (err) => {
+            logger.error('[Products] Update failed:', err);
+            queryClient.setQueryData(PRODUCTS_KEY, snapshot);
+          },
+        },
       );
-      console.log('[Products] Updated:', id, updates);
     },
-    [updateMutation],
+    [updateMutation, setCache, queryClient],
   );
 
   const deleteProduct = useCallback(
     (id: string) => {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      const snapshot = queryClient.getQueryData<Product[]>(PRODUCTS_KEY) ?? [];
+      setCache((prev) => prev.filter((p) => p.id !== id));
       deleteMutation.mutate(id, {
-        onError: (err) => console.error('[Products] Delete failed:', err),
+        onError: (err) => {
+          logger.error('[Products] Delete failed:', err);
+          queryClient.setQueryData(PRODUCTS_KEY, snapshot);
+        },
       });
-      console.log('[Products] Deleted:', id);
     },
-    [deleteMutation],
+    [deleteMutation, setCache, queryClient],
   );
 
   const getProductById = useCallback(

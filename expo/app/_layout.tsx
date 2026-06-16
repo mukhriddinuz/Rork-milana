@@ -56,6 +56,7 @@ import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { DepartmentThemeProvider } from "@/contexts/DepartmentThemeContext";
 import { LightboxProvider, LightboxOverlay } from "@/contexts/LightboxContext";
 import AIStylistChat from "@/components/AIStylistChat";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -87,6 +88,7 @@ export default function RootLayout() {
   }, []);
 
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthProvider>
@@ -120,5 +122,6 @@ export default function RootLayout() {
         </AuthProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
