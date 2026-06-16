@@ -26,6 +26,7 @@ import QuickViewModal from '@/components/QuickViewModal';
 import WebHeader, { TOTAL_HEADER_HEIGHT } from '@/components/WebHeader';
 import GlobalFooter from '@/components/GlobalFooter';
 import { Product } from '@/types';
+import { BREAKPOINTS } from '@/hooks/useResponsive';
 
 export default function SearchScreen() {
   const { width } = useWindowDimensions();
@@ -45,8 +46,8 @@ export default function SearchScreen() {
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [quickViewVisible, setQuickViewVisible] = useState(false);
 
-  const isDesktop = Platform.OS === 'web' && width >= 768;
-  const numColumns = isDesktop ? 4 : 2;
+  const isDesktop = Platform.OS === 'web' && width >= BREAKPOINTS.mobile;
+  const numColumns = width >= BREAKPOINTS.tablet ? 4 : isDesktop ? 3 : 2;
 
   const publishedProducts = useMemo(
     () =>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useAuth } from '@/contexts/AuthContext';
+import { BREAKPOINTS } from '@/hooks/useResponsive';
 
 interface CircularCategory {
   id: string;
@@ -106,7 +107,7 @@ function CategoryItem({ cat, onSelect }: { cat: CircularCategory; onSelect?: (id
 
 export default function CircularCategories({ onSelect }: CircularCategoriesProps) {
   const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === 'web' && width >= 768;
+  const isDesktop = Platform.OS === 'web' && width >= BREAKPOINTS.mobile;
 
   if (isDesktop) {
     return (

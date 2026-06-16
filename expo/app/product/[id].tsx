@@ -36,6 +36,7 @@ import WebHeader, { TOTAL_HEADER_HEIGHT } from '@/components/WebHeader';
 import GlobalFooter from '@/components/GlobalFooter';
 import { useWebHeader } from '@/contexts/WebHeaderContext';
 import { useLightbox } from '@/contexts/LightboxContext';
+import { BREAKPOINTS } from '@/hooks/useResponsive';
 
 const MOCK_COLORS = [
   { id: 'wht', name: 'Oq', nameRu: 'Белый', hex: '#F5F5F0' },
@@ -87,8 +88,8 @@ export default function ProductDetailScreen() {
 
   const addBtnScale = useRef(new Animated.Value(1)).current;
 
-  const isWide = width >= 768;
-  const isDesktop = width >= 1024;
+  const isWide = width >= BREAKPOINTS.mobile;
+  const isDesktop = width >= BREAKPOINTS.tablet;
 
   const galleryImages = useMemo(() => {
     if (!product) return MOCK_GALLERY;

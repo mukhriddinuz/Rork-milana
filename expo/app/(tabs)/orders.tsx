@@ -24,6 +24,7 @@ import GlobalFooter from '@/components/GlobalFooter';
 import CatalogCard from '@/components/CatalogCard';
 import Toast from '@/components/Toast';
 import { Order, Product } from '@/types';
+import { BREAKPOINTS } from '@/hooks/useResponsive';
 
 function RecommendationsGrid({
   products,
@@ -36,6 +37,7 @@ function RecommendationsGrid({
   toggleFavorite,
   onImagePress,
   isDesktop,
+  numColumns,
 }: {
   products: Product[];
   language: 'uz' | 'ru';
@@ -47,8 +49,8 @@ function RecommendationsGrid({
   toggleFavorite: (id: string) => void;
   onImagePress: (p: Product) => void;
   isDesktop: boolean;
+  numColumns: number;
 }) {
-  const numColumns = isDesktop ? 6 : 2;
   const padded = useMemo(() => {
     const data: (Product | null)[] = [...products];
     const remainder = data.length % numColumns;
@@ -101,7 +103,17 @@ export default function OrdersScreen() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const { search, setSearch } = useWebHeader();
 
-  const isDesktop = Platform.OS === 'web' && width >= 768;
+  const isDesktop = Platform.OS === 'web' && width >= BREAKPOINTS.mobile;
+  // Recommendation grid scales with width so tablets aren't crammed:
+  // large desktop 6, desktop 4, tablet 3, phone 2.
+  const recsColumns =
+    width >= BREAKPOINTS.largeDesktop
+      ? 6
+      : width >= BREAKPOINTS.tablet
+        ? 4
+        : width >= BREAKPOINTS.mobile
+          ? 3
+          : 2;
 
   const visibleOrders = useMemo(() => {
     return orders.filter((o) => o.clientId === user?.id);
@@ -189,6 +201,7 @@ export default function OrdersScreen() {
                   toggleFavorite={toggleFavorite}
                   onImagePress={handleImagePress}
                   isDesktop={isDesktop}
+                  numColumns={recsColumns}
                 />
               </View>
             )}
@@ -292,6 +305,7 @@ export default function OrdersScreen() {
                   toggleFavorite={toggleFavorite}
                   onImagePress={handleImagePress}
                   isDesktop={isDesktop}
+                  numColumns={recsColumns}
                 />
               </View>
             )}

@@ -21,8 +21,9 @@ import Colors from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useCategories } from '@/contexts/CategoriesContext';
+import { BREAKPOINTS } from '@/hooks/useResponsive';
 
-const DESKTOP_BREAKPOINT = 768;
+const DESKTOP_BREAKPOINT = BREAKPOINTS.mobile;
 
 export default function AddProductScreen() {
   const router = useRouter();

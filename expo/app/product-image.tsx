@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { BREAKPOINTS } from '@/hooks/useResponsive';
 
 export default function ProductImageScreen() {
   const { uri } = useLocalSearchParams<{ uri: string }>();
@@ -28,7 +29,7 @@ export default function ProductImageScreen() {
   const lastTap = useRef(0);
   const panOffset = useRef({ x: 0, y: 0 });
 
-  const isDesktop = Platform.OS === 'web' && width >= 768;
+  const isDesktop = Platform.OS === 'web' && width >= BREAKPOINTS.mobile;
   const maxImageSize = isDesktop ? Math.min(width * 0.55, height * 0.75) : Math.min(width - 48, height - insets.top - insets.bottom - 120);
 
   useEffect(() => {
