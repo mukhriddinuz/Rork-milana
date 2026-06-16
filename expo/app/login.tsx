@@ -16,6 +16,8 @@ import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { FontFamily } from '@/constants/typography';
+import Colors from '@/constants/colors';
+import { logger } from '@/utils/logger';
 
 /**
  * Customer-facing, luxury login screen.
@@ -59,7 +61,7 @@ export default function LoginScreen() {
       router.replace('/(tabs)/catalog' as any);
     } catch (e) {
       const message = e instanceof Error ? e.message : t('authGenericError');
-      console.log('[Login] Unexpected error:', message);
+      logger.log('[Login] Unexpected error:', message);
       setErrorMsg(message);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
@@ -145,7 +147,7 @@ export default function LoginScreen() {
                     setSuccessMsg(null);
                   }}
                   placeholder={t('emailPlaceholder')}
-                  placeholderTextColor="#BBBBBB"
+                  placeholderTextColor={Colors.placeholder}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -167,7 +169,7 @@ export default function LoginScreen() {
                     setSuccessMsg(null);
                   }}
                   placeholder={t('password')}
-                  placeholderTextColor="#BBBBBB"
+                  placeholderTextColor={Colors.placeholder}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -307,7 +309,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.regular,
     fontSize: 13,
     lineHeight: 20,
-    color: '#888888',
+    color: Colors.muted,
     textAlign: 'center',
     letterSpacing: 0.3,
     paddingHorizontal: 12,
@@ -330,7 +332,7 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: '#888888',
+    color: Colors.muted,
   },
   inputUnderline: {
     flexDirection: 'row',
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
   forgotText: {
     fontFamily: FontFamily.regular,
     fontSize: 12,
-    color: '#888888',
+    color: Colors.muted,
     letterSpacing: 0.4,
     ...(Platform.OS === 'web'
       ? ({ textDecorationLine: 'underline' } as object)
@@ -370,14 +372,14 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: FontFamily.regular,
     fontSize: 12,
-    color: '#C0392B',
+    color: Colors.danger,
     letterSpacing: 0.3,
     marginTop: -4,
   },
   successText: {
     fontFamily: FontFamily.regular,
     fontSize: 12,
-    color: '#2E7D5B',
+    color: Colors.success,
     letterSpacing: 0.3,
     marginTop: -4,
   },
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontFamily: FontFamily.regular,
     fontSize: 12,
-    color: '#888888',
+    color: Colors.muted,
     letterSpacing: 0.3,
   },
   footerLink: {

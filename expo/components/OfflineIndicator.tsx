@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, Pressable, Platform } from 'react-nat
 import { WifiOff, CloudOff, Check } from 'lucide-react-native';
 import { useNetwork } from '@/contexts/NetworkContext';
 import Colors from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 
 export default function OfflineIndicator() {
   const { isOnline, wasOffline, dismissReconnected } = useNetwork();
@@ -137,10 +138,10 @@ const styles = StyleSheet.create({
     }),
   },
   offlineBanner: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: Colors.primary,
   },
   reconnectedBanner: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: Colors.statusCompleted,
   },
   iconContainer: {
     width: 32,
@@ -155,15 +156,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
+    fontFamily: FontFamily.medium,
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    letterSpacing: 0.2,
+    letterSpacing: 0.4,
   },
   subtitle: {
+    fontFamily: FontFamily.regular,
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 1,
+    letterSpacing: 0.2,
   },
   cloudIconWrap: {
     marginLeft: 8,

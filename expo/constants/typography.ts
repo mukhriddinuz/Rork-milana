@@ -36,13 +36,11 @@ export const Typography = {
     fontWeight: '500' as const,
     letterSpacing: 0.6,
     textTransform: 'uppercase' as const,
-    color: '#000000',
   },
   sectionTitle: {
     fontFamily: FontFamily.medium,
     fontSize: 38,
     fontWeight: '500' as const,
-    color: '#000000',
     letterSpacing: 0.2,
     textAlign: 'center' as const,
   },
@@ -50,13 +48,40 @@ export const Typography = {
     fontFamily: FontFamily.regular,
     fontSize: 14,
     fontWeight: '400' as const,
-    color: '#000000',
   },
   price: {
     fontFamily: FontFamily.medium,
     fontWeight: '500' as const,
-    color: '#000000',
+  },
+  label: {
+    fontFamily: FontFamily.medium,
+    fontSize: 10,
+    fontWeight: '600' as const,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as const,
+  },
+  caption: {
+    fontFamily: FontFamily.regular,
+    fontSize: 11,
+    letterSpacing: 0.3,
+  },
+  tabLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 9,
+    fontWeight: '500' as const,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase' as const,
   },
 };
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  xxxl: 64,
+} as const;
 
 export default FontFamily;

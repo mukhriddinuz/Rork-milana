@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { X } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 
 interface ToastProps {
   message: string;
@@ -67,30 +68,33 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.text,
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.white,
+    opacity: 0.6,
   },
   message: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '600' as const,
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    fontWeight: '500' as const,
     color: Colors.white,
+    letterSpacing: 0.4,
   },
   dismiss: {
     padding: 4,

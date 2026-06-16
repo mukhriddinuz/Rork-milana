@@ -48,6 +48,15 @@ const Colors = {
   statusPublished: '#1B5E20',
   statusPublishedText: '#1B5E20',
 
+  // Utility
+  placeholder: '#BBBBBB',
+  muted: '#888888',
+  success: '#2E7D5B',
+  successLight: '#E6F5EF',
+  surface: '#F5F5F5',
+  overlay: 'rgba(0,0,0,0.4)',
+  overlayLight: 'rgba(0,0,0,0.06)',
+
   // Backwards-compatible Expo Router theming map.
   light: {
     text: '#1A1A1A',
