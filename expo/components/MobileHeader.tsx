@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics';
 const HEADER_HEIGHT = 52;
 
 export default function MobileHeader() {
-  const { isWebMobile } = useResponsive();
+  const { isWebMobile, width } = useResponsive();
   const { t, language, changeLanguage } = useAuth();
   const { totalItems } = useCart();
   const { setSearch, goHome, selectDepartment, navigateToSegment } = useWebHeader();
@@ -31,6 +31,11 @@ export default function MobileHeader() {
   const searchAnim = useRef(new Animated.Value(0)).current;
 
   if (!isWebMobile) return null;
+
+  // Scale the wordmark with the viewport so it fits the clear centre zone
+  // between the icon clusters on narrow phones (iPhone SE) as well as wide
+  // ones (S20 Ultra) without ever colliding with the icons.
+  const logoFontSize = width >= 400 ? 16 : width >= 360 ? 14 : 13;
 
   const toggleSearch = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -67,16 +72,18 @@ export default function MobileHeader() {
         <View style={styles.container}>
           {!searchOpen && (
             <>
-              <Pressable
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setMenuOpen(!menuOpen);
-                }}
-                style={styles.iconBtn}
-                testID="mobile-header-menu"
-              >
-                <Menu size={20} color="#000000" strokeWidth={1.5} />
-              </Pressable>
+              <View style={styles.leftCluster}>
+                <Pressable
+                  onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setMenuOpen(!menuOpen);
+                  }}
+                  style={styles.iconBtn}
+                  testID="mobile-header-menu"
+                >
+                  <Menu size={20} color="#000000" strokeWidth={1.5} />
+                </Pressable>
+              </View>
 
               <Pressable
                 onPress={() => {
@@ -86,7 +93,9 @@ export default function MobileHeader() {
                 style={styles.logoTouch}
                 testID="mobile-header-logo"
               >
-                <Text style={styles.logoText} numberOfLines={1}>MILANA PREMIUM</Text>
+                <Text style={[styles.logoText, { fontSize: logoFontSize }]} numberOfLines={1}>
+                  MILANA PREMIUM
+                </Text>
               </Pressable>
 
               <View style={styles.rightActions}>
@@ -229,21 +238,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
+  // The header is a 3-column flex row. The left and right clusters have
+  // the SAME width so the flexible centre column is screen-centered, and
+  // the logo lives inside it with overflow hidden — it can never spill
+  // under the icons on any width; it just truncates on tiny phones.
+  leftCluster: {
+    width: 114,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
   logoTouch: {
-    position: 'absolute' as const,
-    // Reserve the icon-cluster width on BOTH sides so the centered logo
-    // stays screen-centered yet can never slide under the menu button
-    // (left) or the search/account/bag icons (right). It truncates
-    // gracefully on very narrow phones instead of overlapping.
-    left: 116,
-    right: 116,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
     height: HEADER_HEIGHT,
-    zIndex: -1,
+    overflow: 'hidden',
+    paddingHorizontal: 6,
   },
   logoText: {
-    fontSize: 15,
     fontWeight: '500' as const,
     color: '#000000',
     letterSpacing: 0.5,
@@ -256,8 +270,10 @@ const styles = StyleSheet.create({
     }) as string,
   },
   rightActions: {
+    width: 114,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 0,
   },
   iconBtn: {
