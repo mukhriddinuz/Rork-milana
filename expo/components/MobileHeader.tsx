@@ -231,18 +231,22 @@ const styles = StyleSheet.create({
   },
   logoTouch: {
     position: 'absolute' as const,
-    left: 0,
-    right: 0,
+    // Reserve the icon-cluster width on BOTH sides so the centered logo
+    // stays screen-centered yet can never slide under the menu button
+    // (left) or the search/account/bag icons (right). It truncates
+    // gracefully on very narrow phones instead of overlapping.
+    left: 116,
+    right: 116,
     alignItems: 'center',
     justifyContent: 'center',
     height: HEADER_HEIGHT,
     zIndex: -1,
   },
   logoText: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '500' as const,
     color: '#000000',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     ...(Platform.OS === 'web' ? ({ whiteSpace: 'nowrap' } as object) : {}),
     fontFamily: Platform.select({
       web: 'Futura, "Futura-Medium", "Futura PT", "Trebuchet MS", "Century Gothic", "Avenir Next", Arial, sans-serif',
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   iconBtn: {
-    width: 40,
+    width: 38,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
