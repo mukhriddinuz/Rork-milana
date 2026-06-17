@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   // the logo lives inside it with overflow hidden — it can never spill
   // under the icons on any width; it just truncates on tiny phones.
   leftCluster: {
-    width: 114,
+    width: 108,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -270,14 +270,14 @@ const styles = StyleSheet.create({
     }) as string,
   },
   rightActions: {
-    width: 114,
+    width: 108,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 0,
   },
   iconBtn: {
-    width: 38,
+    width: 36,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
